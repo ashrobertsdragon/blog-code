@@ -26,7 +26,8 @@ repos:
     rev: v0.4.0
     hooks:
       - id: biome-ci
-        files: ^frontend/src/
+        args: [--config-path=frontend/biome.json]
+        files: ^frontend/
 
   # General quality checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
