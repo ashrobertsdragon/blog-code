@@ -1,0 +1,53 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [main, foundation]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [22.18, 24.6]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: blog-code/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd blog-code/frontend
+          npm ci
+
+      - name: Lint with Biome
+        run: |
+          cd blog-code/frontend
+          npx biome check .
+
+      - name: Run tests
+        run: |
+          cd blog-code/frontend
+          npm test -- --coverage --run
+
+      - name: Check coverage threshold
+        run: |
+          cd blog-code/frontend
+          npm test -- --coverage --run --reporter=json \
+            > coverage-summary.json || true
+          # Will implement proper coverage check when tests exist
+
+      - name: Build
+        run: |
+          cd blog-code/frontend
+          npm run build
