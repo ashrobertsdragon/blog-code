@@ -49,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Runs type checking with mypy (uv run mypy)
   - Runs tests with pytest with coverage reporting (uv run pytest --cov --cov-report=xml)
   - Enforces 80% code coverage threshold with --cov-fail-under=80
-  - All steps run in blog-code/backend/ directory
+  - All steps run in backend/ directory
 - **Task 8**: Created frontend CI workflow
   - Created .github/workflows/frontend-ci.yml with matrix strategy for Node 22.18 and 24.6
   - Configured triggers for push to main/foundation branches and pull requests to main
@@ -59,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Testing with coverage reporting (npm test -- --coverage --run)
   - Coverage threshold check placeholder (70% will be enforced when tests exist)
   - Production build step (npm run build)
-  - All steps run in blog-code/frontend/ directory with fail-fast behavior
+  - All steps run in frontend/ directory with fail-fast behavior
 - **Task 9**: Initialized React project with Vite
   - Created frontend/package.json with React 18.3.1, Vite 5.4.11, React Router 6.28.0, Axios 1.7.9
   - Configured dependencies: React, React-DOM, React Router, Axios for API calls

@@ -2,7 +2,9 @@ name: Frontend CI
 
 on:
   push:
-    branches: [main, foundation]
+    paths:
+      - 'frontend/**'
+
   pull_request:
     branches: [main]
 
@@ -16,38 +18,35 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
       - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-          cache-dependency-path: blog-code/frontend/package-lock.json
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
         run: |
-          cd blog-code/frontend
+          cd frontend
           npm ci
 
       - name: Lint with Biome
-        run: |
-          cd blog-code/frontend
-          npx biome check .
+        run: npx biome check fontend/.
 
       - name: Run tests
         run: |
-          cd blog-code/frontend
+          cd frontend
           npm test -- --coverage --run
 
       - name: Check coverage threshold
         run: |
-          cd blog-code/frontend
+          cd frontend
           npm test -- --coverage --run --reporter=json \
-            > coverage-summary.json || true
-          # Will implement proper coverage check when tests exist
+            > coverage-summary.json
 
       - name: Build
         run: |
-          cd blog-code/frontend
+          cd frontend
           npm run build
