@@ -1,0 +1,39 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "pyproject.toml"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          uv sync
+
+      - name: Lint with Ruff
+        run: uv run ruff check backend/.
+
+      - name: Type check with mypy
+        run: uv run mypy backend/.
+
+      - name: Run tests with pytest
+        run: uv run pytest --cov --cov-report=xml --cov-fail-under=80

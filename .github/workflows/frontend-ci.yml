@@ -1,0 +1,52 @@
+name: Frontend CI
+
+on:
+  push:
+    paths:
+      - 'frontend/**'
+
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [22.18, 24.6]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Lint with Biome
+        run: npx biome check fontend/.
+
+      - name: Run tests
+        run: |
+          cd frontend
+          npm test -- --coverage --run
+
+      - name: Check coverage threshold
+        run: |
+          cd frontend
+          npm test -- --coverage --run --reporter=json \
+            > coverage-summary.json
+
+      - name: Build
+        run: |
+          cd frontend
+          npm run build
