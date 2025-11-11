@@ -40,6 +40,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enabled check_untyped_defs to require type hints on function definitions
   - Set ignore_missing_imports to allow third-party libraries without type stubs
   - Verified uv run mypy . runs successfully with no issues found in 16 source files
+- **Task 7**: Created backend CI workflow
+  - Created .github/workflows/backend-ci.yml for automated backend testing
+  - Configured to run on Python 3.13 only (not a matrix strategy)
+  - Uses official astral-sh/setup-uv@v1 action for uv setup
+  - Triggers on push to main/foundation branches and pull requests to main
+  - Runs linting with Ruff (uvx ruff check)
+  - Runs type checking with mypy (uv run mypy)
+  - Runs tests with pytest with coverage reporting (uv run pytest --cov --cov-report=xml)
+  - Enforces 80% code coverage threshold with --cov-fail-under=80
+  - All steps run in blog-code/backend/ directory
 - **Task 8**: Created frontend CI workflow
   - Created .github/workflows/frontend-ci.yml with matrix strategy for Node 22.18 and 24.6
   - Configured triggers for push to main/foundation branches and pull requests to main
@@ -56,3 +66,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Established monorepo structure with backend/ and frontend/ directories
 - Configured uv as Python package manager
 - Set up pre-commit hooks for code quality enforcement
+- Configured GitHub Actions CI/CD pipelines for backend (Python 3.13) and frontend (Node 22.18, 24.6)
