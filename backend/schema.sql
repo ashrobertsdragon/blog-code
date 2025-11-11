@@ -1,0 +1,3 @@
+-- Database schema for blog platform
+-- This file will contain the complete database schema.
+-- To be implemented in future tasks.
