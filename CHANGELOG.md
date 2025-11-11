@@ -40,6 +40,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enabled check_untyped_defs to require type hints on function definitions
   - Set ignore_missing_imports to allow third-party libraries without type stubs
   - Verified uv run mypy . runs successfully with no issues found in 16 source files
+- **Task 8**: Created frontend CI workflow
+  - Created .github/workflows/frontend-ci.yml with matrix strategy for Node 22.18 and 24.6
+  - Configured triggers for push to main/foundation branches and pull requests to main
+  - Added steps: checkout, setup Node.js with npm caching, install dependencies, lint, test, build
+  - Uses actions/checkout@v3 and actions/setup-node@v3
+  - Linting with Biome (npx biome check .)
+  - Testing with coverage reporting (npm test -- --coverage --run)
+  - Coverage threshold check placeholder (70% will be enforced when tests exist)
+  - Production build step (npm run build)
+  - All steps run in blog-code/frontend/ directory with fail-fast behavior
 
 ### Infrastructure
 
