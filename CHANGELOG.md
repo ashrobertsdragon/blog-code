@@ -25,6 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Set up test directories (unit, integration, e2e)
   - Generated uv.lock file
   - Added placeholder files (main.py, config.py, schema.sql, passenger_wsgi.py)
+- **Task 5**: Configured Ruff for backend linting and formatting
+  - Added [tool.ruff] configuration to backend/pyproject.toml
+  - Set line-length to 80 characters, target-version to py313
+  - Enabled lint rules: A (builtins), ANN (annotations), D (docstrings), DOC (docstrings), E (pycodestyle errors), F (pyflakes), I (isort), N (pep8-naming), UP (pyupgrade), W (pycodestyle warnings)
+  - Configured flake8-annotations with allow-star-arg-any and mypy-init-return
+  - Set pydocstyle convention to Google style with ignore-decorators for typing.overload
+  - Added per-file-ignores for tests/docs/tools and **init**.py files
+  - Verified uvx ruff check and uvx ruff format commands work correctly
 
 ### Infrastructure
 
