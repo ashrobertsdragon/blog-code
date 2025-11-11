@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Task 1**: Created git repository with .gitignore (Python, Flask, Node, React, SSH, VSCode templates)
 - **Task 2**: Configured pre-commit hooks with Ruff, mypy, Biome, and general checks
 - **Task 3**: Configured Biome for frontend linting and formatting
+  - Created frontend/biome.json with React/JSX rules and a11y accessibility checks
+  - Configured formatter with 2-space indentation and 100-character line width
+  - Enabled hooks rules (useExhaustiveDependencies, useHookAtTopLevel, useJsxKeyInIterable)
+  - Updated pre-commit hook to use explicit config path for Biome
 - **Task 4**: Initialized backend project structure with uv
   - Created complete DDD/Hexagonal Architecture directory structure
   - Set up Python 3.13.5+ requirement in pyproject.toml
