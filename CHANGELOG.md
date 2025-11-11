@@ -33,6 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Set pydocstyle convention to Google style with ignore-decorators for typing.overload
   - Added per-file-ignores for tests/docs/tools and **init**.py files
   - Verified uvx ruff check and uvx ruff format commands work correctly
+- **Task 6**: Configured mypy for type checking
+  - Added [tool.mypy] configuration to backend/pyproject.toml
+  - Set python_version to "3.13" for Python 3.13 target compatibility
+  - Enabled warn_return_any for strict return type checking
+  - Enabled check_untyped_defs to require type hints on function definitions
+  - Set ignore_missing_imports to allow third-party libraries without type stubs
+  - Verified uv run mypy . runs successfully with no issues found in 16 source files
 
 ### Infrastructure
 
