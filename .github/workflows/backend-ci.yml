@@ -1,0 +1,38 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main, foundation ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v1
+
+    - name: Install dependencies
+      run: |
+        cd blog-code/backend
+        uv sync
+
+    - name: Lint with Ruff
+      run: |
+        cd blog-code/backend
+        uvx ruff check .
+
+    - name: Type check with mypy
+      run: |
+        cd blog-code/backend
+        uv run mypy .
+
+    - name: Run tests with pytest
+      run: |
+        cd blog-code/backend
+        uv run pytest --cov --cov-report=xml --cov-fail-under=80
