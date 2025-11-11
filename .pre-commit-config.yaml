@@ -26,7 +26,7 @@ repos:
     rev: v0.4.0
     hooks:
       - id: biome-ci
-        args: [--config-path=frontend/biome.json]
+        args: [--config-path=biome.json]
         files: ^frontend/
 
   # General quality checks
