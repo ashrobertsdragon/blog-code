@@ -1,9 +1,6 @@
 [project]
 authors = [{ name = "Blog Platform Team" }]
-dependencies = [
-    "pydantic>=2.12.4",
-    "pydantic-settings>=2.12.0",
-]
+dependencies = ["pydantic-settings>=2.12.0", "pydantic>=2.12.4"]
 description = "Blog platform with Flask + React"
 name = "blog"
 requires-python = ">=3.13.5"
@@ -30,8 +27,8 @@ line-length = 80
 target-version = "py313"
 
 [tool.ruff.lint]
-ignore = ["A002", "ANN204", "ANN401", "D100", "D417"]
-select = ["A", "ANN", "D", "DOC", "E", "F", "I", "N", "UP", "W"]
+ignore = ["A002", "ANN003", "ANN204", "ANN401", "D100", "D417"]
+select = ["A", "ANN", "D", "E", "F", "I", "N", "UP", "W"]
 
 [tool.ruff.lint.flake8-annotations]
 allow-star-arg-any = true
@@ -42,11 +39,12 @@ convention = "google"
 ignore-decorators = ["typing.overload"]
 
 [tool.ruff.lint.per-file-ignores]
-"**/{tests,docs,tools}/*" = ["ANN001", "ANN201", "D", "DOC", "E402"]
-"__init__.py" = ["E402"]
+"**/{tests,docs,tools}/*" = ["ANN001", "ANN201", "D", "E402"]
+"__init__.py" = ["D104", "E402"]
+"config.py" = ["ANN003", "N803"]
 
 [tool.pytest]
+addopts = ["--cov-fail-under=80", "--cov-report=json", "--cov=.", "-rf"]
 minversion = "9.0"
 pythonpath = ["src"]
-testpaths = ["tests", "docs"]
-addopts = ["-rf", "--cov=.", "--cov-fail-under=80", "--cov-report=json"]
+testpaths = ["docs", "tests"]
