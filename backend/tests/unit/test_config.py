@@ -1,24 +1,28 @@
 """Unit tests for configuration management.
 
-Tests Pydantic Settings class that loads all configuration from environment
+Tests Pydantic DBSettings class that loads all configuration from environment
 variables with proper validation and fail-fast behavior on missing variables.
 """
 
 import pytest
 from pydantic import ValidationError
 
-from config import Settings
+from config import (
+    DBSettings,
+    DevDBSettings,
+    FlaskEnv,
+    ProductionDBSettings,
+    get_db_settings,
+)
 
 
 @pytest.fixture
 def clean_env(monkeypatch):
     """Clear all DB-related environment variables."""
     for key in [
-        "DB_HOST",
-        "DB_PORT",
         "DB_NAME",
         "DB_USER",
-        "DB_PASS",
+        "DB_PASSWORD",
         "FLASK_ENV",
     ]:
         monkeypatch.delenv(key, raising=False)
@@ -27,181 +31,151 @@ def clean_env(monkeypatch):
 
 @pytest.fixture
 def valid_env(clean_env):
-    """Set all required environment variables with valid values."""
-    clean_env.setenv("DB_HOST", "localhost")
-    clean_env.setenv("DB_PORT", "5432")
+    """Fixture to set environment variables."""
     clean_env.setenv("DB_NAME", "blog_db")
     clean_env.setenv("DB_USER", "blog_user")
-    clean_env.setenv("DB_PASS", "secure_password")
-    clean_env.setenv("FLASK_ENV", "production")
+    clean_env.setenv("DB_PASSWORD", "secure_password")
     return clean_env
 
 
 @pytest.fixture
-def minimal_env(clean_env):
-    """Set only required environment variables without defaults."""
-    clean_env.setenv("DB_HOST", "localhost")
-    clean_env.setenv("DB_NAME", "blog_db")
-    clean_env.setenv("DB_USER", "blog_user")
-    clean_env.setenv("DB_PASS", "secure_password")
+def base_settings(valid_env) -> DBSettings:
+    """Fixture to initialize base DBSettings class."""
+    return DBSettings()
+
+
+@pytest.fixture
+def production_env(clean_env):
+    """Fixture to initialize ProductionDBSettings environment variables."""
+    clean_env.setenv("FLASK_ENV", "PRODUCTION")
+    clean_env.setenv("CPANEL_DB_NAME", "PRODUCTION_DB")
+    clean_env.setenv("CPANEL_DB_USER", "PRODUCTION_USER")
+    clean_env.setenv("CPANEL_DB_PASSWORD", "PRODUCTION_PASSWORD")
     return clean_env
 
 
+@pytest.fixture
+def production_settings(production_env) -> ProductionDBSettings:
+    """Fixture to initialize ProductionDBSettings class."""
+    return ProductionDBSettings()
+
+
+@pytest.fixture
+def dev_env(clean_env):
+    """Fixture to initialize DevDBSettings environment variables."""
+    clean_env.setenv("FLASK_ENV", "DEVELOPMENT")
+    clean_env.setenv("LOCAL_DB_NAME", "DEV_DB")
+    clean_env.setenv("LOCAL_DB_USER", "DEV_USER")
+    clean_env.setenv("LOCAL_DB_PASSWORD", "DEV_PASSWORD")
+    return clean_env
+
+
+@pytest.fixture
+def dev_settings(dev_env) -> DevDBSettings:
+    """Fixture to initialize DevDBSettings class."""
+    return DevDBSettings()
+
+
 def test_settings_can_be_imported():
-    """Settings class should be importable from config module."""
-    assert Settings is not None
+    """DBSettings class should be importable from config module."""
+    assert DBSettings is not None
 
 
 def test_settings_has_all_required_fields():
-    """Settings should define all required configuration fields."""
-    assert hasattr(Settings, "model_fields")
+    """DBSettings should define all required configuration fields."""
+    assert hasattr(DBSettings, "model_fields")
     required_fields = {
         "DB_HOST",
-        "DB_PORT",
         "DB_NAME",
         "DB_USER",
-        "DB_PASS",
+        "DB_PASSWORD",
         "FLASK_ENV",
     }
-    settings_fields = set(Settings.model_fields.keys())
+    settings_fields = set(DBSettings.model_fields.keys())
     assert required_fields.issubset(settings_fields), (
         f"Missing fields: {required_fields - settings_fields}"
     )
 
 
-def test_db_port_has_default_value():
-    """DB_PORT should have a default value of 5432."""
-    db_port_field = Settings.model_fields.get("DB_PORT")
-    assert db_port_field is not None
-    assert db_port_field.default == 5432
-
-
 def test_flask_env_has_default_value():
-    """FLASK_ENV should have a default value of 'production'."""
-    flask_env_field = Settings.model_fields.get("FLASK_ENV")
+    """FLASK_ENV should have a default value of 'PRODUCTION'."""
+    flask_env_field = DBSettings.model_fields.get("FLASK_ENV")
     assert flask_env_field is not None
-    assert flask_env_field.default == "production"
+    assert flask_env_field.default == FlaskEnv.PRODUCTION
 
 
-@pytest.mark.parametrize(
-    "missing_field", ["DB_HOST", "DB_NAME", "DB_USER", "DB_PASS"]
-)
+@pytest.mark.parametrize("missing_field", ["DB_NAME", "DB_USER", "DB_PASSWORD"])
 def test_missing_required_field_raises_validation_error(
     valid_env, missing_field
 ):
-    """Settings should raise ValidationError on missing required field."""
+    """DBSettings should raise ValidationError on missing required field."""
     valid_env.delenv(missing_field)
 
     with pytest.raises(ValidationError) as exc_info:
-        Settings()
+        DBSettings()
 
     assert missing_field in str(exc_info.value)
 
 
-def test_valid_settings_with_all_fields(valid_env):
-    """Settings should instantiate successfully with all required fields."""
-    settings = Settings()
+def test_valid_settings_with_all_fields(base_settings):
+    """DBSettings should instantiate successfully with all required fields."""
 
-    assert settings.DB_HOST == "localhost"
-    assert settings.DB_PORT == 5432
-    assert settings.DB_NAME == "blog_db"
-    assert settings.DB_USER == "blog_user"
-    assert settings.DB_PASS == "secure_password"
-    assert settings.FLASK_ENV == "production"
+    assert base_settings.DB_HOST == "localhost"
+    assert base_settings.DB_NAME == "blog_db"
+    assert base_settings.DB_USER == "blog_user"
+    assert base_settings.DB_PASSWORD == "secure_password"
+    assert base_settings.FLASK_ENV == FlaskEnv.PRODUCTION
 
 
-def test_valid_settings_with_defaults(minimal_env):
-    """Settings should use defaults for optional fields when not provided."""
-    settings = Settings()
+def test_valid_settings_with_defaults(base_settings):
+    """DBSettings should use defaults for optional fields when not provided."""
 
-    assert settings.DB_HOST == "localhost"
-    assert settings.DB_PORT == 5432
-    assert settings.DB_NAME == "blog_db"
-    assert settings.DB_USER == "blog_user"
-    assert settings.DB_PASS == "secure_password"
-    assert settings.FLASK_ENV == "production"
+    assert base_settings.DB_HOST == "localhost"
+    assert base_settings.FLASK_ENV == FlaskEnv.PRODUCTION
 
 
-def test_db_port_is_integer(valid_env):
-    """DB_PORT should be an integer."""
-    settings = Settings()
-
-    assert isinstance(settings.DB_PORT, int)
-    assert settings.DB_PORT == 5432
-
-
-def test_db_port_converts_string_to_int(minimal_env):
-    """DB_PORT should be converted from string to integer."""
-    minimal_env.setenv("DB_PORT", "3306")
-    settings = Settings()
-
-    assert isinstance(settings.DB_PORT, int)
-    assert settings.DB_PORT == 3306
-
-
-def test_db_port_invalid_string_raises_validation_error(minimal_env):
-    """DB_PORT should raise ValidationError if not a valid integer."""
-    minimal_env.setenv("DB_PORT", "not_a_number")
-
-    with pytest.raises(ValidationError):
-        Settings()
-
-
-def test_string_fields_are_strings(valid_env):
+def test_string_fields_are_strings(base_settings):
     """String fields should be str type."""
-    settings = Settings()
 
-    assert isinstance(settings.DB_HOST, str)
-    assert isinstance(settings.DB_NAME, str)
-    assert isinstance(settings.DB_USER, str)
-    assert isinstance(settings.DB_PASS, str)
-    assert isinstance(settings.FLASK_ENV, str)
+    assert isinstance(base_settings.DB_HOST, str)
+    assert isinstance(base_settings.DB_NAME, str)
+    assert isinstance(base_settings.DB_USER, str)
+    assert isinstance(base_settings.DB_PASSWORD, str)
+
+
+def test_enum_field_is_enum(base_settings):
+    """Enum fields should be Enum type."""
+    assert isinstance(base_settings.FLASK_ENV, FlaskEnv)
 
 
 def test_settings_reads_from_environment_variables(clean_env):
-    """Settings should read values from environment variables."""
+    """DBSettings should read values from environment variables."""
     test_values = {
-        "DB_HOST": "db.example.com",
-        "DB_PORT": "5433",
         "DB_NAME": "production_db",
         "DB_USER": "prod_user",
-        "DB_PASS": "prod_password",
-        "FLASK_ENV": "production",
+        "DB_PASSWORD": "prod_password",
+        "FLASK_ENV": "PRODUCTION",
     }
 
     for key, value in test_values.items():
         clean_env.setenv(key, value)
 
-    settings = Settings()
+    settings = DBSettings()
 
-    assert settings.DB_HOST == "db.example.com"
-    assert settings.DB_PORT == 5433
     assert settings.DB_NAME == "production_db"
     assert settings.DB_USER == "prod_user"
-    assert settings.DB_PASS == "prod_password"
-    assert settings.FLASK_ENV == "production"
+    assert settings.DB_PASSWORD == "prod_password"
+    assert settings.FLASK_ENV == FlaskEnv.PRODUCTION
 
 
-def test_settings_uses_env_config_class():
-    """Settings should use Config class with env_file configuration."""
-    assert hasattr(Settings, "Config") or hasattr(Settings, "model_config")
-
-
-def test_db_host_accepts_localhost(minimal_env):
+def test_db_host_accepts_localhost(base_settings):
     """DB_HOST should accept 'localhost' for cPanel deployments."""
-    settings = Settings()
-    assert settings.DB_HOST == "localhost"
 
-
-def test_singleton_pattern_optional():
-    """Settings should ideally be instantiated once (singleton pattern)."""
-
-    assert Settings is not None
-    assert hasattr(Settings, "DB_HOST")
+    assert base_settings.DB_HOST == "localhost"
 
 
 def test_settings_no_hardcoded_secrets():
-    """Settings class should not contain any hardcoded secrets."""
+    """DBSettings class should not contain any hardcoded secrets."""
     import config
 
     with open(config.__file__) as f:
@@ -221,3 +195,41 @@ def test_settings_no_hardcoded_secrets():
             or pattern not in config_source.lower()
             or "environment" in config_source.lower()
         ), f"Potential hardcoded secret containing '{pattern}' found"
+
+
+def test_get_db_settings_returns_production_subclass(production_env):
+    """Factory should return ProductionDBSettings when FLASK_ENV=PRODUCTION."""
+    get_db_settings.cache_clear()
+    settings = get_db_settings()
+    assert isinstance(settings, ProductionDBSettings)
+
+
+def test_get_db_settings_returns_dev_subclass(dev_env):
+    """Factory should return DevDBSettings when FLASK_ENV=DEVELOPMENT."""
+    get_db_settings.cache_clear()
+    settings = get_db_settings()
+    assert isinstance(settings, DevDBSettings)
+
+
+def test_get_db_settings_returns_production_subclass_default(production_env):
+    """Factory should return ProductionDBSettings when FLASK_ENV is not set."""
+    production_env.delenv("FLASK_ENV")
+    get_db_settings.cache_clear()
+    settings = get_db_settings()
+    assert isinstance(settings, ProductionDBSettings)
+
+
+def test_production_settings(production_settings):
+    """ProductionDBSettings should return correct values."""
+    assert production_settings.DB_HOST == "localhost"
+    assert production_settings.DB_NAME == "PRODUCTION_DB"
+    assert production_settings.DB_USER == "PRODUCTION_USER"
+    assert production_settings.DB_PASSWORD == "PRODUCTION_PASSWORD"
+
+
+def test_dev_settings(dev_settings):
+    """DevDBSettings should return correct values."""
+    assert dev_settings.DB_HOST == "localhost"
+    assert dev_settings.DB_NAME == "DEV_DB"
+    assert dev_settings.DB_USER == "DEV_USER"
+    assert dev_settings.DB_PASSWORD == "DEV_PASSWORD"
