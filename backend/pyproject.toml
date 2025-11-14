@@ -1,6 +1,10 @@
 [project]
 authors = [{ name = "Blog Platform Team" }]
-dependencies = ["pydantic-settings>=2.12.0", "pydantic>=2.12.4"]
+dependencies = [
+    "pydantic-settings>=2.12.0",
+    "pydantic>=2.12.4",
+    "sqlmodel>=0.0.27",
+]
 description = "Blog platform with Flask + React"
 name = "blog"
 requires-python = ">=3.13.5"
@@ -40,7 +44,7 @@ ignore-decorators = ["typing.overload"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/{tests,docs,tools}/*" = ["ANN001", "ANN201", "D", "E402"]
-"__init__.py" = ["D104", "E402"]
+"**/__init__.py" = ["D104", "E402"]
 "config.py" = ["ANN003", "N803"]
 
 [tool.pytest]
