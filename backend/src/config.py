@@ -5,7 +5,7 @@ from enum import StrEnum
 from functools import lru_cache
 from typing import ClassVar
 
-from pydantic import Field, PostgresDsn, computed_field
+from pydantic import Field, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -44,7 +44,6 @@ class DBSettings(BaseSettings):
         DBSettings._registry[cls.FLASK_ENV] = cls
 
     @property
-    @computed_field
     def url(self) -> str:
         """Database connection string."""
         db: PostgresDsn = PostgresDsn(

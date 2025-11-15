@@ -5,6 +5,8 @@ from sqlmodel import Field, SQLModel
 
 
 class User(SQLModel, table=True):
+    """User table model."""
+
     id: int | None = Field(default=None, primary_key=True)
     email: str = Field(unique=True)
     role: str = Field(default="authenticated")
@@ -12,6 +14,8 @@ class User(SQLModel, table=True):
 
 
 class Post(SQLModel, table=True):
+    """Post table model."""
+
     id: int | None = Field(default=None, primary_key=True)
     slug: str = Field(unique=True, index=True)
     title: str

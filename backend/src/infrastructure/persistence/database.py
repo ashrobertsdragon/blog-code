@@ -32,7 +32,7 @@ def get_engine() -> Engine:
 
 
 def get_db() -> Generator[Session]:
-    """Dependency injection function for database sessions.
+    """Context manager for database sessions.
 
     Yields:
         SQLModel Session instance

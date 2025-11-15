@@ -125,6 +125,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Integration tests in tests/integration/test_database.py
   - Created shared test fixtures in tests/conftest.py
 
+#### Backend API: Health Checks
+
+- **Task 14**: Created health check endpoints blueprint
+  - Created backend/src/api/routes/health.py with Flask blueprint
+  - Implemented GET /health endpoint for basic uptime check (returns 200 with {"status": "healthy"})
+  - Implemented GET /health/db endpoint for database connectivity test (executes SELECT 1 query, returns 200/503)
+  - Implemented GET /health/github endpoint for GitHub API reachability test (calls <https://api.github.com/rate_limit>, returns 200/503)
+  - All endpoints return JSON responses with appropriate status codes
+  - Added Flask and requests dependencies to pyproject.toml
+  - Health endpoints handle exceptions gracefully, returning 503 on failure with error details
+  - Database health check uses execute() method for SQLModel Session compatibility
+  - GitHub health check uses 5-second timeout for external API calls
+  - Integration tests in tests/integration/test_health_endpoints.py with 9 passing tests
+  - Created tests/integration/conftest.py with shared fixtures for integration tests
+  - All tests verify correct status codes, JSON content types, and error handling
+
 ### Infrastructure
 
 - Established monorepo structure with backend/ and frontend/ directories

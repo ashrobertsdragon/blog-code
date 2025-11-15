@@ -176,9 +176,9 @@ def test_production_settings(production_settings):
 def test_dev_settings(dev_settings):
     """DevDBSettings should return correct values."""
     assert dev_settings.DB_HOST == "localhost"
-    assert dev_settings.DB_NAME == "DEV_DB"
-    assert dev_settings.DB_USER == "DEV_USER"
-    assert dev_settings.DB_PASSWORD == "DEV_PASSWORD"
+    assert dev_settings.DB_NAME == "test_db"
+    assert dev_settings.DB_USER == "test_user"
+    assert dev_settings.DB_PASSWORD == "test_password"
 
 
 def test_get_db_url_returns_dev_connection_string(dev_settings, clear_caches):
@@ -186,7 +186,7 @@ def test_get_db_url_returns_dev_connection_string(dev_settings, clear_caches):
     get_db_url.cache_clear()
     _db_settings.cache_clear()
     expected_url = (
-        "postgresql+psycopg2://DEV_USER:DEV_PASSWORD@localhost/DEV_DB"
+        "postgresql+psycopg2://test_user:test_password@localhost/test_db"
     )
     assert get_db_url() == expected_url
 
