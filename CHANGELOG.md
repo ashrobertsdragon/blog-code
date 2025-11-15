@@ -89,6 +89,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Confirmed CSS purging works correctly (no utility classes used yet, so minimal output)
   - Verified Biome formatting works correctly with all configuration files
 
+#### Backend Configuration & Database
+
+- **Task 11**: Created configuration management with Pydantic
+  - Created backend/src/config.py implementing Pydantic BaseSettings
+  - Defined DBSettings base class with DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, FLASK_ENV fields
+  - DB_HOST defaults to localhost (cPanel requirement)
+  - Created DevDBSettings with LOCAL\_ prefix for development environment
+  - Created ProductionDBSettings with CPANEL\_ prefix for production environment
+  - Implemented get_db_settings() factory function with caching
+  - Added environment-based settings class selection
+  - Fail-fast validation on missing required environment variables
+  - Unit tests in tests/unit/test_config.py with 100% coverage
+- **Task 12**: Created database schema with SQLModel
+  - Created backend/src/infrastructure/persistence/models.py
+  - Defined User table model (id, email, role, created_at)
+  - Defined Post table model (id, slug, title, published_html, published, author_id, created_at, updated_at)
+  - Added foreign key constraint from Post.author_id to User.id
+  - Added indexes on Post.slug and Post.author_id for query performance
+- **Task 13**: Created database connection with SQLModel
+  - Created backend/src/infrastructure/persistence/database.py
+  - Implemented get_engine() function with lru_cache for singleton engine pattern
+  - Configured PostgreSQL connection string using settings from config.py
+  - Enabled pool_pre_ping for connection health checks
+  - Implemented get_db() generator for FastAPI/Flask dependency injection
+  - Uses SQLModel Session context manager for automatic cleanup
+  - Added psycopg2-binary dependency for PostgreSQL driver
+  - Integration tests in tests/integration/test_database.py
+  - Created shared test fixtures in tests/conftest.py
+
 ### Infrastructure
 
 - Established monorepo structure with backend/ and frontend/ directories

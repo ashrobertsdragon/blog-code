@@ -1,6 +1,7 @@
 [project]
 authors = [{ name = "Blog Platform Team" }]
 dependencies = [
+    "psycopg2-binary>=2.9.11",
     "pydantic-settings>=2.12.0",
     "pydantic>=2.12.4",
     "sqlmodel>=0.0.27",
