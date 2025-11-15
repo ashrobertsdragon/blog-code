@@ -14,26 +14,30 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Move into backend dir
+        run: cd backend
+
       - name: "Set up Python"
         uses: actions/setup-python@v6
         with:
-          python-version-file: "backend/pyproject.toml"
+          python-version-file: "pyproject.toml"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
 
-      - name: Install dependencies
-        run: |
-          cd backend
-          uv sync
+      - name: Lint with ruff
+        uses: astral-sh/ruff-action@v3
+        with:
+          version: "latest"
+          github-token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
 
-      - name: Lint with Ruff
-        run: uv run ruff check backend/.
+      - name: Check formatting with ruff
+        run: ruff format ---diff
 
       - name: Type check with mypy
-        run: uv run mypy backend/.
+        run: uv sync && uv run mypy .
 
       - name: Run tests with pytest
         run: uv run pytest --cov --cov-report=xml --cov-fail-under=80
