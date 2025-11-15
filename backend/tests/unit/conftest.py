@@ -13,6 +13,12 @@ def clean_env(monkeypatch):
         "DB_USER",
         "DB_PASSWORD",
         "FLASK_ENV",
+        "LOCAL_DB_NAME",
+        "LOCAL_DB_USER",
+        "LOCAL_DB_PASSWORD",
+        "CPANEL_DB_NAME",
+        "CPANEL_DB_USER",
+        "CPANEL_DB_PASSWORD",
     ]:
         monkeypatch.delenv(key, raising=False)
     return monkeypatch

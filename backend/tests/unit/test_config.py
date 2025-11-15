@@ -1,7 +1,6 @@
 """Unit tests for configuration management.
 
-Tests Pydantic DBSettings class that loads all configuration from environment
-variables with proper validation and fail-fast behavior on missing variables.
+Tests Pydantic DBSettings class and database url.
 """
 
 import pytest
@@ -12,68 +11,15 @@ from config import (
     DevDBSettings,
     FlaskEnv,
     ProductionDBSettings,
-    get_db_settings,
+    _db_settings,
+    get_db_url,
 )
 
 
 @pytest.fixture
-def clean_env(monkeypatch):
-    """Clear all DB-related environment variables."""
-    for key in [
-        "DB_NAME",
-        "DB_USER",
-        "DB_PASSWORD",
-        "FLASK_ENV",
-    ]:
-        monkeypatch.delenv(key, raising=False)
-    return monkeypatch
-
-
-@pytest.fixture
-def valid_env(clean_env):
-    """Fixture to set environment variables."""
-    clean_env.setenv("DB_NAME", "blog_db")
-    clean_env.setenv("DB_USER", "blog_user")
-    clean_env.setenv("DB_PASSWORD", "secure_password")
-    return clean_env
-
-
-@pytest.fixture
-def base_settings(valid_env) -> DBSettings:
-    """Fixture to initialize base DBSettings class."""
-    return DBSettings()
-
-
-@pytest.fixture
-def production_env(clean_env):
-    """Fixture to initialize ProductionDBSettings environment variables."""
-    clean_env.setenv("FLASK_ENV", "PRODUCTION")
-    clean_env.setenv("CPANEL_DB_NAME", "PRODUCTION_DB")
-    clean_env.setenv("CPANEL_DB_USER", "PRODUCTION_USER")
-    clean_env.setenv("CPANEL_DB_PASSWORD", "PRODUCTION_PASSWORD")
-    return clean_env
-
-
-@pytest.fixture
-def production_settings(production_env) -> ProductionDBSettings:
-    """Fixture to initialize ProductionDBSettings class."""
-    return ProductionDBSettings()
-
-
-@pytest.fixture
-def dev_env(clean_env):
-    """Fixture to initialize DevDBSettings environment variables."""
-    clean_env.setenv("FLASK_ENV", "DEVELOPMENT")
-    clean_env.setenv("LOCAL_DB_NAME", "DEV_DB")
-    clean_env.setenv("LOCAL_DB_USER", "DEV_USER")
-    clean_env.setenv("LOCAL_DB_PASSWORD", "DEV_PASSWORD")
-    return clean_env
-
-
-@pytest.fixture
-def dev_settings(dev_env) -> DevDBSettings:
-    """Fixture to initialize DevDBSettings class."""
-    return DevDBSettings()
+def clear_caches():
+    get_db_url.cache_clear()
+    _db_settings.cache_clear()
 
 
 def test_settings_can_be_imported():
@@ -168,8 +114,8 @@ def test_settings_reads_from_environment_variables(clean_env):
     assert settings.FLASK_ENV == FlaskEnv.PRODUCTION
 
 
-def test_db_host_accepts_localhost(base_settings):
-    """DB_HOST should accept 'localhost' for cPanel deployments."""
+def test_db_host_is_localhost(base_settings):
+    """DB_HOST should be 'localhost'."""
 
     assert base_settings.DB_HOST == "localhost"
 
@@ -197,25 +143,25 @@ def test_settings_no_hardcoded_secrets():
         ), f"Potential hardcoded secret containing '{pattern}' found"
 
 
-def test_get_db_settings_returns_production_subclass(production_env):
+def test_db_settings_returns_production_subclass(production_env):
     """Factory should return ProductionDBSettings when FLASK_ENV=PRODUCTION."""
-    get_db_settings.cache_clear()
-    settings = get_db_settings()
+    _db_settings.cache_clear()
+    settings = _db_settings()
     assert isinstance(settings, ProductionDBSettings)
 
 
-def test_get_db_settings_returns_dev_subclass(dev_env):
+def test_db_settings_returns_dev_subclass(dev_env):
     """Factory should return DevDBSettings when FLASK_ENV=DEVELOPMENT."""
-    get_db_settings.cache_clear()
-    settings = get_db_settings()
+    _db_settings.cache_clear()
+    settings = _db_settings()
     assert isinstance(settings, DevDBSettings)
 
 
-def test_get_db_settings_returns_production_subclass_default(production_env):
+def test_db_settings_returns_production_subclass_default(production_env):
     """Factory should return ProductionDBSettings when FLASK_ENV is not set."""
     production_env.delenv("FLASK_ENV")
-    get_db_settings.cache_clear()
-    settings = get_db_settings()
+    _db_settings.cache_clear()
+    settings = _db_settings()
     assert isinstance(settings, ProductionDBSettings)
 
 
@@ -233,3 +179,28 @@ def test_dev_settings(dev_settings):
     assert dev_settings.DB_NAME == "DEV_DB"
     assert dev_settings.DB_USER == "DEV_USER"
     assert dev_settings.DB_PASSWORD == "DEV_PASSWORD"
+
+
+def test_get_db_url_returns_dev_connection_string(dev_settings, clear_caches):
+    """get_db_url should return correct development connection string."""
+    get_db_url.cache_clear()
+    _db_settings.cache_clear()
+    expected_url = (
+        "postgresql+psycopg2://DEV_USER:DEV_PASSWORD@localhost/DEV_DB"
+    )
+    assert get_db_url() == expected_url
+
+
+def test_get_db_url_returns_production_connection_string(
+    production_settings, clear_caches
+):
+    """get_db_url should return correct production connection string."""
+    expected_url = "postgresql+psycopg2://PRODUCTION_USER:PRODUCTION_PASSWORD@localhost/PRODUCTION_DB"
+    assert get_db_url() == expected_url
+
+
+def test_get_db_url_is_cached(dev_settings, clear_caches):
+    """get_db_url should be cached."""
+    url1 = get_db_url()
+    url2 = get_db_url()
+    assert url1 is url2

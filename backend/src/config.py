@@ -5,7 +5,7 @@ from enum import StrEnum
 from functools import lru_cache
 from typing import ClassVar
 
-from pydantic import Field
+from pydantic import Field, PostgresDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -43,6 +43,16 @@ class DBSettings(BaseSettings):
         super().__init_subclass__(**kwargs)
         DBSettings._registry[cls.FLASK_ENV] = cls
 
+    @property
+    @computed_field
+    def url(self) -> str:
+        """Database connection string."""
+        db: PostgresDsn = PostgresDsn(
+            f"postgresql+psycopg2://{self.DB_USER}:{self.DB_PASSWORD}"
+            f"@{self.DB_HOST}/{self.DB_NAME}"
+        )
+        return db.unicode_string()
+
 
 class DevDBSettings(DBSettings):
     """Settings for development."""
@@ -59,11 +69,21 @@ class ProductionDBSettings(DBSettings):
 
 
 @lru_cache
-def get_db_settings() -> DBSettings:
-    """Factory function for initializing Settings subclass."""
+def _db_settings(flask_env: str | None = None) -> DBSettings:
+    """Factory function for initializing Settings subclass from FLASK_ENV."""
     try:
-        env = FlaskEnv[os.environ["FLASK_ENV"]]
-        settings_class = DBSettings._registry[env]
+        env = flask_env or os.environ["FLASK_ENV"]
+        settings_class = DBSettings._registry[FlaskEnv[env]]
         return settings_class()
     except KeyError:
         return ProductionDBSettings()
+
+
+@lru_cache
+def get_db_url() -> str:
+    """Database connection string.
+
+    Returns:
+        str: Validated database connection string based on envars.
+    """
+    return _db_settings().url
