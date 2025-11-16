@@ -44,6 +44,10 @@ repos:
     rev: v1.18.1
     hooks:
       - id: mypy
+        additional_dependencies:
+          - types-requests
+          - pydantic
+          - sqlmodel
 
   - repo: https://github.com/biomejs/pre-commit
     rev: v2.3.2

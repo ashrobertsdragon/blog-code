@@ -1,0 +1,40 @@
+"""Shared test fixtures for database/db settings tests."""
+
+import pytest
+
+from config import DevDBSettings
+
+
+@pytest.fixture
+def clean_env(monkeypatch):
+    """Clear all DB-related environment variables."""
+    for key in [
+        "DB_NAME",
+        "DB_USER",
+        "DB_PASSWORD",
+        "FLASK_ENV",
+        "LOCAL_DB_NAME",
+        "LOCAL_DB_USER",
+        "LOCAL_DB_PASSWORD",
+        "CPANEL_DB_NAME",
+        "CPANEL_DB_USER",
+        "CPANEL_DB_PASSWORD",
+    ]:
+        monkeypatch.delenv(key, raising=False)
+    return monkeypatch
+
+
+@pytest.fixture
+def dev_env(clean_env):
+    """Fixture to initialize DevDBSettings environment variables."""
+    clean_env.setenv("FLASK_ENV", "DEVELOPMENT")
+    clean_env.setenv("LOCAL_DB_NAME", "test_db")
+    clean_env.setenv("LOCAL_DB_USER", "test_user")
+    clean_env.setenv("LOCAL_DB_PASSWORD", "test_password")
+    return clean_env
+
+
+@pytest.fixture
+def dev_settings(dev_env) -> DevDBSettings:
+    """Fixture to initialize DevDBSettings class."""
+    return DevDBSettings()

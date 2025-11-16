@@ -5,7 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.1.1 (2025-11-14)
+
+### Refactor
+
+- Refactored `config.py` to introduce `get_db_url()` for obtaining the database connection string, replacing direct instantiation of `DBSettings`.
+- Updated tests in `test_config.py` to reflect the refactoring and added tests for `get_db_url()`.
+
 ## [Unreleased]
+
+### Fixed
+
+#### Code Review Fixes (PR #2)
+
+- **Critical**: Fixed datetime field defaults in `User` and `Post` models
+  - Changed `Field(default=datetime.now(dt.UTC))` to `Field(default_factory=lambda: datetime.now(dt.UTC))`
+  - Prevents all records from sharing the same import-time timestamp
+  - Files: `backend/src/infrastructure/persistence/models.py` (lines 13, 27-28)
+  - Added comprehensive unit tests validating timestamp uniqueness
+- **Critical**: Replaced deprecated Pydantic v2 API in `config.py`
+  - Changed `.unicode_string()` to `str()` for PostgresDsn conversion
+  - Ensures compatibility with future Pydantic versions
+  - File: `backend/src/config.py` (line 53)
+- **Security**: Removed information leakage from health endpoint errors
+  - Changed error responses from `str(e)` to generic "unreachable" message
+  - Added structured logging for internal diagnostics
+  - Prevents exposure of database credentials, stack traces, network details
+  - File: `backend/src/api/routes/health.py` (lines 47-48, 70-73)
+  - Health endpoints now use `requests.exceptions.RequestException`
+- **Testing**: Added test for non-200 GitHub API responses
+  - File: `backend/tests/integration/test_health_endpoints.py`
 
 ### Added
 
@@ -88,6 +117,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Verified Tailwind base styles (CSS reset) included in output
   - Confirmed CSS purging works correctly (no utility classes used yet, so minimal output)
   - Verified Biome formatting works correctly with all configuration files
+
+#### Backend Configuration & Database
+
+- **Task 11**: Created configuration management with Pydantic
+  - Created backend/src/config.py implementing Pydantic BaseSettings
+  - Defined DBSettings base class with DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, FLASK_ENV fields
+  - DB_HOST defaults to localhost (cPanel requirement)
+  - Created DevDBSettings with LOCAL\_ prefix for development environment
+  - Created ProductionDBSettings with CPANEL\_ prefix for production environment
+  - Implemented get_db_settings() factory function with caching
+  - Added environment-based settings class selection
+  - Fail-fast validation on missing required environment variables
+  - Unit tests in tests/unit/test_config.py with 100% coverage
+- **Task 12**: Created database schema with SQLModel
+  - Created backend/src/infrastructure/persistence/models.py
+  - Defined User table model (id, email, role, created_at)
+  - Defined Post table model (id, slug, title, published_html, published, author_id, created_at, updated_at)
+  - Added foreign key constraint from Post.author_id to User.id
+  - Added indexes on Post.slug and Post.author_id for query performance
+- **Task 13**: Created database connection with SQLModel
+  - Created backend/src/infrastructure/persistence/database.py
+  - Implemented get_engine() function with lru_cache for singleton engine pattern
+  - Configured PostgreSQL connection string using settings from config.py
+  - Enabled pool_pre_ping for connection health checks
+  - Implemented get_db() generator for FastAPI/Flask dependency injection
+  - Uses SQLModel Session context manager for automatic cleanup
+  - Added psycopg2-binary dependency for PostgreSQL driver
+  - Integration tests in tests/integration/test_database.py
+  - Created shared test fixtures in tests/conftest.py
+
+#### Backend API: Health Checks
+
+- **Task 14**: Created health check endpoints blueprint
+  - Created backend/src/api/routes/health.py with Flask blueprint
+  - Implemented GET /health endpoint for basic uptime check (returns 200 with {"status": "healthy"})
+  - Implemented GET /health/db endpoint for database connectivity test (executes SELECT 1 query, returns 200/503)
+  - Implemented GET /health/github endpoint for GitHub API reachability test (calls <https://api.github.com/rate_limit>, returns 200/503)
+  - All endpoints return JSON responses with appropriate status codes
+  - Added Flask and requests dependencies to pyproject.toml
+  - Health endpoints handle exceptions gracefully, returning 503 on failure with error details
+  - Database health check uses execute() method for SQLModel Session compatibility
+  - GitHub health check uses 5-second timeout for external API calls
+  - Integration tests in tests/integration/test_health_endpoints.py with 9 passing tests
+  - Created tests/integration/conftest.py with shared fixtures for integration tests
+  - All tests verify correct status codes, JSON content types, and error handling
 
 ### Infrastructure
 
