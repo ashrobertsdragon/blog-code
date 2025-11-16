@@ -5,6 +5,7 @@ Tests health monitoring API endpoints for application and dependency health.
 
 from unittest.mock import MagicMock, patch
 
+from requests.exceptions import RequestException
 from sqlmodel import Session
 
 
@@ -49,7 +50,7 @@ def test_health_db_failure_returns_503(client):
     assert response.status_code == 503
     assert response.json["status"] == "unhealthy"
     assert "database" in response.json
-    assert "Connection refused" in response.json["database"]
+    assert response.json["database"] == "unreachable"
 
 
 def test_health_db_returns_json(client, dev_settings):
@@ -83,14 +84,34 @@ def test_health_github_success_returns_200(client):
 def test_health_github_failure_returns_503(client):
     """GET /health/github should return 503 when GitHub API is unreachable."""
     # Mock failed GitHub API request
+
     with patch("api.routes.health.requests.get") as mock_get:
-        mock_get.side_effect = Exception("Connection timeout")
+        mock_get.side_effect = RequestException("Connection timeout")
         response = client.get("/health/github")
 
     assert response.status_code == 503
     assert response.json["status"] == "unhealthy"
     assert "github" in response.json
-    assert "Connection timeout" in response.json["github"]
+    assert response.json["github"] == "unreachable"
+
+
+def test_health_github_non_200_response_returns_503(client):
+    """GET /health/github returns 503 when GitHub API returns non-200."""
+    # Mock GitHub API returning 500 Internal Server Error
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+    mock_response.raise_for_status.side_effect = RequestException(
+        "500 Server Error"
+    )
+
+    with patch("api.routes.health.requests.get") as mock_get:
+        mock_get.return_value = mock_response
+        response = client.get("/health/github")
+
+    assert response.status_code == 503
+    assert response.json["status"] == "unhealthy"
+    assert "github" in response.json
+    assert response.json["github"] == "unreachable"
 
 
 def test_health_github_returns_json(client):

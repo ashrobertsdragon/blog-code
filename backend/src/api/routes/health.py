@@ -4,12 +4,16 @@ Provides endpoints to check application uptime, database connectivity,
 and GitHub API reachability.
 """
 
+import logging
+
 import requests
 from flask import Blueprint, Response, jsonify
 from sqlalchemy import text
 from sqlmodel import select
 
 from infrastructure.persistence.database import get_db
+
+logger = logging.getLogger(__name__)
 
 health_bp = Blueprint("health", __name__)
 
@@ -41,8 +45,9 @@ def health_db() -> tuple[Response, int]:
         db.exec(statement)
         return jsonify({"status": "healthy", "database": "connected"}), 200
     except Exception as e:
+        logger.error(f"Database health check failed: {e}")
         return (
-            jsonify({"status": "unhealthy", "database": str(e)}),
+            jsonify({"status": "unhealthy", "database": "unreachable"}),
             503,
         )
 
@@ -62,8 +67,9 @@ def health_github() -> tuple[Response, int]:
         response = requests.get("https://api.github.com/rate_limit", timeout=5)
         response.raise_for_status()
         return jsonify({"status": "healthy", "github": "reachable"}), 200
-    except Exception as e:
+    except requests.exceptions.RequestException as e:
+        logger.error(f"GitHub API health check failed: {e}")
         return (
-            jsonify({"status": "unhealthy", "github": str(e)}),
+            jsonify({"status": "unhealthy", "github": "unreachable"}),
             503,
         )

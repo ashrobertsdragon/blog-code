@@ -94,23 +94,13 @@ def test_enum_field_is_enum(base_settings):
     assert isinstance(base_settings.FLASK_ENV, FlaskEnv)
 
 
-def test_settings_reads_from_environment_variables(clean_env):
+def test_settings_reads_from_environment_variables(valid_env):
     """DBSettings should read values from environment variables."""
-    test_values = {
-        "DB_NAME": "production_db",
-        "DB_USER": "prod_user",
-        "DB_PASSWORD": "prod_password",
-        "FLASK_ENV": "PRODUCTION",
-    }
-
-    for key, value in test_values.items():
-        clean_env.setenv(key, value)
-
     settings = DBSettings()
 
-    assert settings.DB_NAME == "production_db"
-    assert settings.DB_USER == "prod_user"
-    assert settings.DB_PASSWORD == "prod_password"
+    assert settings.DB_NAME == "blog_db"
+    assert settings.DB_USER == "blog_user"
+    assert settings.DB_PASSWORD == "secure_password"
     assert settings.FLASK_ENV == FlaskEnv.PRODUCTION
 
 
@@ -120,27 +110,20 @@ def test_db_host_is_localhost(base_settings):
     assert base_settings.DB_HOST == "localhost"
 
 
-def test_settings_no_hardcoded_secrets():
+@pytest.mark.parametrize(
+    "pattern", ["password", "secret", "api_key", "token", "credentials"]
+)
+def test_settings_no_hardcoded_secrets(pattern):
     """DBSettings class should not contain any hardcoded secrets."""
     import config
 
     with open(config.__file__) as f:
         config_source = f.read()
-
-    dangerous_patterns = [
-        "password",
-        "secret",
-        "api_key",
-        "token",
-        "credentials",
-    ]
-
-    for pattern in dangerous_patterns:
-        assert (
-            "=" not in config_source
-            or pattern not in config_source.lower()
-            or "environment" in config_source.lower()
-        ), f"Potential hardcoded secret containing '{pattern}' found"
+    assert (
+        "=" not in config_source
+        or pattern not in config_source.lower()
+        or "environment" in config_source.lower()
+    ), f"Potential hardcoded secret containing '{pattern}' found"
 
 
 def test_db_settings_returns_production_subclass(production_env):

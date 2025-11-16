@@ -10,7 +10,7 @@ class User(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     email: str = Field(unique=True)
     role: str = Field(default="authenticated")
-    created_at: datetime = Field(default=datetime.now(dt.UTC))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(dt.UTC))
 
 
 class Post(SQLModel, table=True):
@@ -24,5 +24,5 @@ class Post(SQLModel, table=True):
     author_id: int | None = Field(
         default=None, foreign_key="User.id", index=True
     )
-    created_at: datetime = Field(default=datetime.now(dt.UTC))
-    updated_at: datetime = Field(default=datetime.now(dt.UTC))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(dt.UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(dt.UTC))

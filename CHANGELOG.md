@@ -14,6 +14,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+#### Code Review Fixes (PR #2)
+
+- **Critical**: Fixed datetime field defaults in `User` and `Post` models
+  - Changed `Field(default=datetime.now(dt.UTC))` to `Field(default_factory=lambda: datetime.now(dt.UTC))`
+  - Prevents all records from sharing the same import-time timestamp
+  - Files: `backend/src/infrastructure/persistence/models.py` (lines 13, 27-28)
+  - Added comprehensive unit tests validating timestamp uniqueness
+- **Critical**: Replaced deprecated Pydantic v2 API in `config.py`
+  - Changed `.unicode_string()` to `str()` for PostgresDsn conversion
+  - Ensures compatibility with future Pydantic versions
+  - File: `backend/src/config.py` (line 53)
+- **Security**: Removed information leakage from health endpoint errors
+  - Changed error responses from `str(e)` to generic "unreachable" message
+  - Added structured logging for internal diagnostics
+  - Prevents exposure of database credentials, stack traces, network details
+  - File: `backend/src/api/routes/health.py` (lines 47-48, 70-73)
+  - Health endpoints now use `requests.exceptions.RequestException`
+- **Testing**: Added test for non-200 GitHub API responses
+  - File: `backend/tests/integration/test_health_endpoints.py`
+
 ### Added
 
 #### Foundation Stage - Infrastructure Setup

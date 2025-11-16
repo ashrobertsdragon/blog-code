@@ -50,7 +50,7 @@ class DBSettings(BaseSettings):
             f"postgresql+psycopg2://{self.DB_USER}:{self.DB_PASSWORD}"
             f"@{self.DB_HOST}/{self.DB_NAME}"
         )
-        return db.unicode_string()
+        return str(db)
 
 
 class DevDBSettings(DBSettings):
