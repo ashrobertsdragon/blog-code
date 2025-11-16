@@ -34,7 +34,7 @@ jobs:
           github-token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
 
       - name: Check formatting with ruff
-        run: ruff format ---diff .
+        run: ruff format --diff .
 
       - name: Type check with mypy
         run: uv sync && uv run mypy .
