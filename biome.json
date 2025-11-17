@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["frontend/src/**/*.{js,jsx,ts,tsx}", "frontend/**/*.{js,jsx,ts,tsx}"]
+    "includes": ["frontend/**/*.{js,jsx,ts,tsx}"]
   },
   "assist": {
     "actions": {

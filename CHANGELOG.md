@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Frontend**: Updated frontend dependencies to latest versions.
+- **Frontend**: Corrected Biome configuration to remove redundant include paths.
+- **Frontend**: Separated Vitest configuration into `vitest.config.ts` and ensured shared configuration with `vite.config.ts` using `mergeConfig`.
+
 ## v0.1.2 (2025-11-17)
 
 ### Fixed
