@@ -190,6 +190,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All tests use proper TypeScript types and mocking patterns with vi.mock() factory
   - Tests verify correct endpoint calls, response data handling, and error propagation
 
+#### Frontend Components & Routing (TDD)
+
+- **Task 16**: Created NotFound page component
+  - Created frontend/src/pages/NotFound.tsx with 404 error page
+  - Implemented user-friendly 404 message with Tailwind styling
+  - Added React Router Link component for navigation back to home page
+  - Responsive design with centered layout and proper visual hierarchy
+  - Comprehensive test coverage in tests/unit/NotFound.test.tsx with 3 passing tests
+  - Tests verify 404 message rendering, home link presence and navigation, component styling
+  - All tests use React Testing Library with BrowserRouter wrapper
+  - Component uses Tailwind utility classes for styling (flex, text-9xl, rounded-lg, etc.)
+
 ### Infrastructure
 
 - Established monorepo structure with backend/ and frontend/ directories
