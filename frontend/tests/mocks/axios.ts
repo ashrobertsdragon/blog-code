@@ -1,3 +1,4 @@
+import type { AxiosInstance, AxiosStatic } from 'axios'
 import { vi } from 'vitest'
 
 /**
@@ -14,7 +15,7 @@ const mockAxiosDelete = vi.fn()
 const mockAxiosPatch = vi.fn()
 const mockAxiosRequest = vi.fn()
 
-const mockAxiosInstance = {
+const mockAxiosInstance: AxiosInstance = {
   get: mockAxiosGet,
   post: mockAxiosPost,
   put: mockAxiosPut,
@@ -26,9 +27,9 @@ const mockAxiosInstance = {
       common: {},
     },
   },
-}
+} as AxiosInstance
 
-const mockAxios = {
+const mockAxios: AxiosStatic = {
   get: mockAxiosGet,
   post: mockAxiosPost,
   put: mockAxiosPut,
@@ -41,7 +42,7 @@ const mockAxios = {
       common: {},
     },
   },
-}
+} as AxiosStatic
 
 export default mockAxios
 

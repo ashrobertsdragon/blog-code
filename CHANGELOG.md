@@ -163,6 +163,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Created tests/integration/conftest.py with shared fixtures for integration tests
   - All tests verify correct status codes, JSON content types, and error handling
 
+#### Frontend API Service: Health Checks (TDD)
+
+- **Task 15**: Created health check API service with TypeScript
+  - Created frontend/src/services/healthService.ts with axios client
+  - Implemented checkHealth(), checkDatabase(), checkGitHub() methods
+  - Configured axios instance with baseURL from VITE_API_BASE_URL environment variable or '/api' default
+  - Added TypeScript type definitions: HealthResponse, DatabaseHealthResponse, GitHubHealthResponse
+  - All methods properly typed with Promise return types
+  - Errors propagate to caller for proper error handling
+  - Comprehensive test coverage in tests/unit/healthService.test.ts with 6 passing tests
+  - Created tests/mocks/axios.ts with complete axios mock (mocks both default instance and create() factory)
+  - Created tests/setup.ts for Vitest configuration with jest-dom
+  - Configured Vitest in vite.config.ts with jsdom environment and coverage reporting
+  - Added TypeScript support: tsconfig.json and tsconfig.node.json
+  - Installed TypeScript dependencies: typescript, @types/react, @types/react-dom, @types/node
+  - Updated biome.json to include TypeScript file patterns (.ts, .tsx)
+  - All tests use proper TypeScript types and mocking patterns with vi.mock() factory
+  - Tests verify correct endpoint calls, response data handling, and error propagation
+
 ### Infrastructure
 
 - Established monorepo structure with backend/ and frontend/ directories

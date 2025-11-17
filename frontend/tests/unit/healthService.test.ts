@@ -2,6 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('axios', () => import('../mocks/axios'))
 
+import type {
+  DatabaseHealthResponse,
+  GitHubHealthResponse,
+  HealthResponse,
+} from '@/services/healthService'
 import { healthService } from '@/services/healthService'
 import { mockAxiosGet } from '../mocks/axios'
 
@@ -12,7 +17,7 @@ describe('healthService', () => {
 
   describe('checkHealth', () => {
     it('should call GET /health and return response data', async () => {
-      const mockData = { status: 'healthy' }
+      const mockData: HealthResponse = { status: 'healthy' }
       mockAxiosGet.mockResolvedValue({ data: mockData })
 
       const result = await healthService.checkHealth()
@@ -31,7 +36,7 @@ describe('healthService', () => {
 
   describe('checkDatabase', () => {
     it('should call GET /health/db and return response data', async () => {
-      const mockData = { status: 'healthy', database: 'connected' }
+      const mockData: DatabaseHealthResponse = { status: 'healthy', database: 'connected' }
       mockAxiosGet.mockResolvedValue({ data: mockData })
 
       const result = await healthService.checkDatabase()
@@ -50,7 +55,7 @@ describe('healthService', () => {
 
   describe('checkGitHub', () => {
     it('should call GET /health/github and return response data', async () => {
-      const mockData = { status: 'healthy', github: 'reachable' }
+      const mockData: GitHubHealthResponse = { status: 'healthy', github: 'reachable' }
       mockAxiosGet.mockResolvedValue({ data: mockData })
 
       const result = await healthService.checkGitHub()
