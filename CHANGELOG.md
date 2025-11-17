@@ -201,6 +201,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Tests verify 404 message rendering, home link presence and navigation, component styling
   - All tests use React Testing Library with BrowserRouter wrapper
   - Component uses Tailwind utility classes for styling (flex, text-9xl, rounded-lg, etc.)
+- Created Home page component with health status display
+  - Created frontend/src/pages/Home.tsx as landing page demonstrating health check integration
+  - Implemented health status fetching from healthService.checkHealth() on component mount
+  - Added loading, error, and success state management using React hooks (useState, useEffect)
+  - Displays "Loading..." message while fetching health data
+  - Shows user-friendly error message on API failure
+  - Renders health status in styled card layout on success
+  - Responsive design with Tailwind CSS styling consistent with NotFound.tsx
+  - Comprehensive test coverage in tests/unit/Home.test.tsx with 17 passing tests (100% statements, 83.33% branches)
+  - Tests verify initial render/loading state, successful health display, error handling, component lifecycle, state transitions, and accessibility
+  - All tests use React Testing Library with proper mocking of healthService
+  - TypeScript with proper HealthResponse interface integration
 
 ### Infrastructure
 
