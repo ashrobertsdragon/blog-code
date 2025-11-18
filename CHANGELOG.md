@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Frontend**: Implemented `App.tsx` root component with BrowserRouter routing for Home and NotFound pages.
+- **Frontend**: Implemented `main.tsx` Vite entry point using React 18 createRoot API with StrictMode wrapper.
+- **Frontend**: Added root element creation to test setup for proper DOM initialization in tests.
+
+### Changed
+
+- **Frontend**: Updated entry point from `main.jsx` to `main.tsx` in `index.html`.
+- **Frontend**: Updated tests to correctly expect `React.StrictMode` as `symbol` type (React 18 behavior).
+
 ### Fixed
 
 - **Frontend**: Updated frontend dependencies to latest versions.
