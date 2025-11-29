@@ -1,15 +1,30 @@
-import pytest
-from flask import Flask
+"""Shared fixtures for integration tests."""
 
-from api.routes.health import health_bp
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
 
 
 @pytest.fixture
-def app(dev_settings):
-    """Create Flask app with health blueprint for testing."""
-    app = Flask(__name__)
-    app.config["TESTING"] = True
-    app.register_blueprint(health_bp)
+def mock_build_dir():
+    """Mock the build directory path to avoid requiring actual React build."""
+    with patch("pathlib.Path.exists") as mock_exists:
+        mock_exists.return_value = True
+        yield Path("monorepo/frontend/dist")
+
+
+@pytest.fixture
+def app(dev_settings, mock_build_dir):
+    """Create Flask app using factory pattern for testing.
+
+    Uses the actual create_app() factory function with mocked build directory.
+    """
+    from main import create_app
+
+    with patch("pathlib.Path.exists", return_value=True):
+        app = create_app(config={"TESTING": True})
+
     return app
 
 

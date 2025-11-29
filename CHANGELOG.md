@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Backend**: Implemented Flask application factory pattern in `main.py` (Task 19)
+  - Created `create_app()` factory function with environment-based configuration
+  - Configured Flask with static_folder='dist/static' and template_folder='dist' for React SPA serving
+  - Registered health check blueprint with no URL prefix
+  - Implemented CORS for development environment only (disabled in production)
+  - Added SPA catch-all route serving index.html for client-side routing
+  - Implemented path traversal protection with double URL-decoding and backslash detection
+  - Added security logging for path traversal attempts and file access errors
+  - Production safety: raises RuntimeError if build directory missing in production
+  - Development tolerance: logs warning if build directory missing in development
+  - Comprehensive test suite: 12 unit tests + 18 integration tests (100% coverage for main.py)
+  - Security tests: 5 tests covering path traversal attack vectors (direct, middle, URL-encoded, backslash, exception handling)
 - **Frontend**: Implemented `App.tsx` root component with BrowserRouter routing for Home and NotFound pages.
 - **Frontend**: Implemented `main.tsx` Vite entry point using React 18 createRoot API with StrictMode wrapper.
 - **Frontend**: Added root element creation to test setup for proper DOM initialization in tests.
@@ -36,8 +48,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Refactored `config.py` to introduce `get_db_url()` for obtaining the database connection string, replacing direct instantiation of `DBSettings`.
 - Updated tests in `test_config.py` to reflect the refactoring and added tests for `get_db_url()`.
-
-## [Unreleased]
 
 ### Fixed
 
