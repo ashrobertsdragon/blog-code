@@ -1,32 +1,28 @@
 [project]
+name = "markdown-blog"
+version = "0.1.0"
+description = "Blog platform with Flask + React"
+requires-python = ">=3.13.5"
 authors = [{ name = "Ashlynn Antrobus" }]
 dependencies = [
-    "flask>=3.1.2",
-    "psycopg2-binary>=2.9.11",
-    "pydantic-settings>=2.12.0",
-    "pydantic>=2.12.4",
-    "requests>=2.32.5",
-    "sqlmodel>=0.0.27",
+  "flask>=3.1.2",
+  "flask-cors>=6.0.1",
+  "psycopg2-binary>=2.9.11",
+  "pydantic>=2.12.4",
+  "pydantic-settings>=2.12.0",
+  "requests>=2.32.5",
+  "sqlmodel>=0.0.27",
 ]
-description = "Blog platform with Flask + React"
-name = "markdown-blog"
-requires-python = ">=3.13.5"
-version = "0.1.0"
 
 [dependency-groups]
 dev = [
-    "mypy>=1.18.2",
-    "pytest-cov>=7.0.0",
-    "pytest>=9.0.0",
-    "types-requests>=2.32.4.20250913",
+  "mypy>=1.18.2",
+  "pytest>=9.0.0",
+  "pytest-cov>=7.0.0",
+  "types-flask>=1.1.6",
+  "types-flask-cors>=6.0.0.20250809",
+  "types-requests>=2.32.4.20250913",
 ]
-
-[build-system]
-build-backend = "hatchling.build"
-requires = ["hatchling"]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src"]
 
 [tool.mypy]
 check_untyped_defs = true
@@ -34,6 +30,12 @@ follow_imports = "silent"
 python_version = "3.13"
 warn_return_any = true
 mypy_path = "$MYPY_CONFIG_FILE_DIR/src"
+
+[tool.pytest]
+addopts = ["--cov-fail-under=80", "--cov-report=json", "--cov=.", "-rf"]
+minversion = "9.0"
+pythonpath = ["src"]
+testpaths = ["docs", "tests"]
 
 [tool.ruff]
 line-length = 80
@@ -55,9 +57,3 @@ ignore-decorators = ["typing.overload"]
 "**/{tests,docs,tools}/*" = ["ANN001", "ANN201", "D", "E402"]
 "**/__init__.py" = ["D104", "E402"]
 "config.py" = ["ANN003", "N802", "N803"]
-
-[tool.pytest]
-addopts = ["--cov-fail-under=80", "--cov-report=json", "--cov=.", "-rf"]
-minversion = "9.0"
-pythonpath = ["src"]
-testpaths = ["docs", "tests"]
