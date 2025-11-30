@@ -9,7 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Backend**: Implemented Flask application factory pattern in `main.py` (Task 19)
+- **Backend**: Implemented Passenger WSGI entry point in `src/passenger_wsgi.py`
+  - Created WSGI-compliant entry point for Phusion Passenger deployment
+  - Implemented virtual environment bootstrap logic with configurable VIRTUAL_ENV environment variable
+  - Imported Flask application via `create_app()` factory pattern
+  - Exported application as 'application' variable (Passenger WSGI requirement)
+  - Comprehensive error handling with actionable debugging information to stderr
+  - Cross-platform compatibility (Windows development, Linux production)
+  - PEP 3333 WSGI specification compliance
+  - Test suite: 7 integration tests covering WSGI interface, variable naming, type verification, and request handling
+- **Backend**: Implemented Flask application factory pattern in `main.py`
   - Created `create_app()` factory function with environment-based configuration
   - Configured Flask with static_folder='dist/static' and template_folder='dist' for React SPA serving
   - Registered health check blueprint with no URL prefix
