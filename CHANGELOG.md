@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CI**: Fixed backend CI workflow to set FLASK_ENV=development for test runs
   - Backend tests no longer require frontend build to run
   - Allows independent testing of backend without frontend dependencies
+- **CI**: Added workflow_dispatch and workflow file path triggers to both CI workflows
+  - Backend and frontend CI now trigger on workflow file changes
+  - Added manual trigger capability via workflow_dispatch
 - **Backend**: Implemented Flask application factory pattern in `main.py`
   - Created `create_app()` factory function with environment-based configuration
   - Configured Flask with static_folder='dist/static' and template_folder='dist' for React SPA serving
