@@ -42,7 +42,8 @@ jobs:
       - name: Type check with mypy
         run: uv sync && uv run mypy .
 
+      - name: Create frontend build directory structure
+        run: mkdir -p ../frontend/dist && touch ../frontend/dist/index.html
+
       - name: Run tests with pytest
         run: uv run pytest --cov --cov-report=xml --cov-fail-under=80
-        env:
-          FLASK_ENV: development

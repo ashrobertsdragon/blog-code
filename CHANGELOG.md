@@ -18,9 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cross-platform compatibility (Windows development, Linux production)
   - PEP 3333 WSGI specification compliance
   - Test suite: 9 integration tests covering WSGI interface, variable naming, type verification, request handling, and virtual environment loading, 5 unit tests covering all functions.
-- **CI**: Fixed backend CI workflow to set FLASK_ENV=development for test runs
-  - Backend tests no longer require frontend build to run
-  - Allows independent testing of backend without frontend dependencies
+- **CI**: Fixed backend CI workflow to create minimal frontend build structure
+  - Creates frontend/dist directory with empty index.html before tests
+  - Allows SPA routing tests to pass without full frontend build
+  - Backend tests can verify SPA route handling independently
 - **CI**: Added workflow_dispatch and workflow file path triggers to both CI workflows
   - Backend and frontend CI now trigger on workflow file changes
   - Added manual trigger capability via workflow_dispatch
