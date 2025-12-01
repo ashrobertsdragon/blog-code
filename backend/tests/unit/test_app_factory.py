@@ -24,15 +24,10 @@ def test_create_app_returns_flask_instance():
 
 
 def test_create_app_configures_static_folder():
-    """create_app() configures static_folder to frontend build/static."""
+    """create_app() configures static_folder to build/static."""
     from main import create_app
 
-    expected_static_path = (
-        Path(__file__).parent.parent.parent.parent
-        / "frontend"
-        / "dist"
-        / "static"
-    )
+    expected_static_path = Path(__file__).parents[3] / "build" / "static"
 
     with patch("pathlib.Path.exists", return_value=True):
         app = create_app()
@@ -42,12 +37,10 @@ def test_create_app_configures_static_folder():
 
 
 def test_create_app_configures_template_folder():
-    """create_app() should configure template_folder to frontend build dir."""
+    """create_app() should configure template_folder to build dir."""
     from main import create_app
 
-    expected_template_path = (
-        Path(__file__).parent.parent.parent.parent / "frontend" / "dist"
-    )
+    expected_template_path = Path(__file__).parents[3] / "build"
 
     with patch("pathlib.Path.exists", return_value=True):
         app = create_app()

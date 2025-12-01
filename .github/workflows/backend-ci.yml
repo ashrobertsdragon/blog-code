@@ -45,9 +45,10 @@ jobs:
 
       - name: Create frontend build directory structure
         run: |
-          mkdir -p ../build/static
+          mkdir -p ../build/static/js
           echo '<html><body><div id="root"></div></body></html>' \
             > ../build/index.html
+          echo '/* dummy js file */' > ../build/static/js/main.abc123.js
 
       - name: Run tests with pytest
         run: uv run pytest --cov --cov-report=xml --cov-fail-under=80

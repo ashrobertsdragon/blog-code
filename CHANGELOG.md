@@ -21,11 +21,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Backend**: Fixed build directory path in main.py to match Vite output
   - Changed from frontend/dist to build/ to match vite.config.ts outDir
   - Vite outputs to ../build from frontend directory (monorepo/build/)
+  - Updated unit tests to expect build/ instead of frontend/dist
+  - Updated tests to use Path(**file**).parents[3] instead of repeated .parent
 - **CI**: Fixed backend CI workflow to create minimal frontend build structure
-  - Creates build/ directory with build/static/ subdirectory
+  - Creates build/ directory with build/static/js/ subdirectory
   - Creates build/index.html with minimal HTML for SPA routing tests
+  - Creates dummy JS file for static file serving tests
   - Allows SPA routing tests to pass without full frontend build
   - Backend tests can verify SPA route handling independently
+- **Config**: Removed ty.toml from monorepo
 - **CI**: Added workflow_dispatch and workflow file path triggers to both CI workflows
   - Backend and frontend CI now trigger on workflow file changes
   - Added manual trigger capability via workflow_dispatch
