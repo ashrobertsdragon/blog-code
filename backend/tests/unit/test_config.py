@@ -117,7 +117,7 @@ def test_settings_no_hardcoded_secrets(pattern):
     """DBSettings class should not contain any hardcoded secrets."""
     import config
 
-    with open(config.__file__) as f:
+    with open(config.__file__) as f:  # type: ignore # uv ty false positive
         config_source = f.read()
     assert (
         "=" not in config_source
