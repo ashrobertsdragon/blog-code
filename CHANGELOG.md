@@ -18,8 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cross-platform compatibility (Windows development, Linux production)
   - PEP 3333 WSGI specification compliance
   - Test suite: 9 integration tests covering WSGI interface, variable naming, type verification, request handling, and virtual environment loading, 5 unit tests covering all functions.
+- **Backend**: Fixed build directory path in main.py to match Vite output
+  - Changed from frontend/dist to build/ to match vite.config.ts outDir
+  - Vite outputs to ../build from frontend directory (monorepo/build/)
 - **CI**: Fixed backend CI workflow to create minimal frontend build structure
-  - Creates frontend/dist directory with empty index.html before tests
+  - Creates build/ directory with build/static/ subdirectory
+  - Creates build/index.html with minimal HTML for SPA routing tests
   - Allows SPA routing tests to pass without full frontend build
   - Backend tests can verify SPA route handling independently
 - **CI**: Added workflow_dispatch and workflow file path triggers to both CI workflows

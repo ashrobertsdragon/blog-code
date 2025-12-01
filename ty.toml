@@ -1,0 +1,2 @@
+[environment]
+root = ["backend/.venv/Lib/site-packages", "backend/src"]

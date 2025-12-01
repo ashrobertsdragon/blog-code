@@ -30,7 +30,7 @@ def create_app(config: dict | None = None) -> Flask:
     Raises:
         RuntimeError: If build directory is missing in production environment.
     """
-    build_dir = Path(__file__).parent.parent.parent / "frontend" / "dist"
+    build_dir = Path(__file__).parent.parent.parent / "build"
     static_dir = build_dir / "static"
 
     app = Flask(
