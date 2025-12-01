@@ -42,3 +42,5 @@ jobs:
 
       - name: Run tests with pytest
         run: uv run pytest --cov --cov-report=xml --cov-fail-under=80
+        env:
+          FLASK_ENV: development
