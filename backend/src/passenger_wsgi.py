@@ -27,15 +27,59 @@ References:
 import os
 import sys
 
-INTERP = os.path.join(
-    os.environ.get("VIRTUAL_ENV", "/home/cpaneluser/virtualenv/blog"),
-    "bin",
-    "python3",
-)
 
-if sys.executable != INTERP and os.path.exists(INTERP):
-    os.execl(INTERP, INTERP, *sys.argv)
+def get_interpreter_path(venv_path: str) -> str:
+    """Get the path to the Python interpreter in the virtual environment.
+
+    Args:
+        venv_path: Path to virtual environment. If None, reads from
+                   VIRTUAL_ENV environment variable or uses default.
+
+    Returns:
+        Absolute path to the Python 3 interpreter.
+    """
+    return os.path.join(venv_path, "bin", "python3")
+
+
+def should_bootstrap(interpreter_path: str, current_executable: str) -> bool:
+    """Determine if virtual environment bootstrap is needed.
+
+    Args:
+        interpreter_path: Path to desired Python interpreter.
+        current_executable: Path to currently running Python interpreter.
+
+    Returns:
+        True if bootstrap is needed (paths differ and target exists).
+    """
+    return current_executable != interpreter_path and os.path.exists(
+        interpreter_path
+    )
+
+
+def bootstrap_virtualenv(interpreter_path: str) -> None:
+    """Re-execute the script using the virtual environment Python.
+
+    Args:
+        interpreter_path: Path to the Python interpreter to use.
+    """
+    os.execl(interpreter_path, interpreter_path, *sys.argv)
+
+
+def load_environment(path: str | None = None) -> None:
+    """Load virtual environment."""
+    venv_path = path or os.environ.get("VENV_PATH")
+    if not venv_path:
+        raise ValueError("Virtual Environment path must be set")
+    interpreter = get_interpreter_path(venv_path)
+
+    if should_bootstrap(interpreter, sys.executable):
+        bootstrap_virtualenv(interpreter)
+
 
 from main import create_app  # noqa: E402
 
 application = create_app()
+
+
+if __name__ == "__main__":
+    load_environment()

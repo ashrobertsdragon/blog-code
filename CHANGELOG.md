@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Comprehensive error handling with actionable debugging information to stderr
   - Cross-platform compatibility (Windows development, Linux production)
   - PEP 3333 WSGI specification compliance
-  - Test suite: 7 integration tests covering WSGI interface, variable naming, type verification, and request handling
+  - Test suite: 9 integration tests covering WSGI interface, variable naming, type verification, request handling, and virtual environment loading, 5 unit tests covering all functions.
 - **Backend**: Implemented Flask application factory pattern in `main.py`
   - Created `create_app()` factory function with environment-based configuration
   - Configured Flask with static_folder='dist/static' and template_folder='dist' for React SPA serving

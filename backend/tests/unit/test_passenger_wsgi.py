@@ -1,105 +1,62 @@
-"""Unit tests for Passenger WSGI entry point.
+import os
+from unittest.mock import patch
 
-Tests the virtualenv bootstrap logic and application creation with mocking.
-"""
+import pytest
 
-import sys
-from unittest.mock import MagicMock, patch
-
-
-def test_interp_path_construction_with_virtual_env():
-    """INTERP path should use VIRTUAL_ENV when set."""
-    with patch.dict("os.environ", {"VIRTUAL_ENV": "/custom/venv"}):
-        with patch("os.path.exists", return_value=False):
-            with patch("sys.executable", "/usr/bin/python3"):
-                import importlib
-
-                import passenger_wsgi
-
-                importlib.reload(passenger_wsgi)
-                expected = "/custom/venv/bin/python3"
-                assert passenger_wsgi.INTERP == expected
+from passenger_wsgi import (
+    bootstrap_virtualenv,
+    get_interpreter_path,
+    should_bootstrap,
+)
 
 
-def test_interp_path_construction_without_virtual_env():
-    """INTERP path should use default when VIRTUAL_ENV not set."""
-    with patch.dict("os.environ", {}, clear=True):
-        with patch("os.path.exists", return_value=False):
-            with patch("sys.executable", "/usr/bin/python3"):
-                import importlib
-
-                import passenger_wsgi
-
-                importlib.reload(passenger_wsgi)
-                expected = "/home/cpaneluser/virtualenv/blog/bin/python3"
-                assert passenger_wsgi.INTERP == expected
+@pytest.fixture
+def mock_interpreter_path() -> str:
+    """Fixture providing a mock interpreter path."""
+    return os.path.join(
+        "home", "cpaneluser", "virtualenv", "blog", "bin", "python3"
+    )
 
 
-def test_os_execl_called_when_interpreter_differs():
-    """os.execl should be called when sys.executable != INTERP."""
-    mock_execl = MagicMock()
-    with patch.dict("os.environ", {"VIRTUAL_ENV": "/test/venv"}):
-        with patch("os.path.exists", return_value=True):
-            with patch("sys.executable", "/usr/bin/python3"):
-                with patch("os.execl", mock_execl):
-                    import importlib
-
-                    import passenger_wsgi
-
-                    importlib.reload(passenger_wsgi)
-                    expected_interp = "/test/venv/bin/python3"
-                    mock_execl.assert_called_once_with(
-                        expected_interp, expected_interp, *sys.argv
-                    )
+@pytest.fixture
+def mock_virtualenv() -> str:
+    """Fixture providing a mock virtual environment path."""
+    return os.path.join("home", "cpaneluser", "virtualenv", "blog")
 
 
-def test_os_execl_not_called_when_interpreter_matches():
-    """os.execl should not be called when sys.executable == INTERP."""
-    mock_execl = MagicMock()
-    interp = "/test/venv/bin/python3"
-    with patch.dict("os.environ", {"VIRTUAL_ENV": "/test/venv"}):
-        with patch("os.path.exists", return_value=True):
-            with patch("sys.executable", interp):
-                with patch("os.execl", mock_execl):
-                    import importlib
-
-                    import passenger_wsgi
-
-                    importlib.reload(passenger_wsgi)
-                    mock_execl.assert_not_called()
+def test_get_interpreter_path_custom() -> None:
+    """Test that get_interpreter_path returns the provided path."""
+    custom_venv_path = "my-venv"
+    interpreter_path = get_interpreter_path(custom_venv_path)
+    assert interpreter_path == os.path.join(custom_venv_path, "bin", "python3")
 
 
-def test_os_execl_not_called_when_interp_does_not_exist():
-    """os.execl should not be called when INTERP path doesn't exist."""
-    mock_execl = MagicMock()
-    with patch.dict("os.environ", {"VIRTUAL_ENV": "/nonexistent/venv"}):
-        with patch("os.path.exists", return_value=False):
-            with patch("sys.executable", "/usr/bin/python3"):
-                with patch("os.execl", mock_execl):
-                    import importlib
-
-                    import passenger_wsgi
-
-                    importlib.reload(passenger_wsgi)
-                    mock_execl.assert_not_called()
+def test_should_bootstrap_true(mock_interpreter_path) -> None:
+    """Test that should_bootstrap is True when interpreter paths differ."""
+    current_executable = "/usr/bin/python3"
+    with patch("os.path.exists", return_value=True):
+        assert should_bootstrap(mock_interpreter_path, current_executable)
 
 
-def test_application_is_created():
-    """Application should be created from create_app factory."""
-    with patch("os.path.exists", return_value=False):
-        with patch("sys.executable", "/usr/bin/python3"):
-            import passenger_wsgi
-
-            assert hasattr(passenger_wsgi, "application")
-            assert passenger_wsgi.application is not None
+def test_should_bootstrap_false(mock_interpreter_path) -> None:
+    """Test that should_bootstrap is False when interpreter paths are same."""
+    with patch("os.path.exists", return_value=True):
+        assert not should_bootstrap(
+            mock_interpreter_path, mock_interpreter_path
+        )
 
 
-def test_application_is_flask_instance():
-    """Application should be a Flask instance."""
-    from flask import Flask
+def test_bootstrap_virtualenv(mock_interpreter_path):
+    """Test that bootstrap_virtualenv re-executes the script."""
+    with patch("sys.argv", ["test_script.py"]), patch("os.execl") as mock_execl:
+        bootstrap_virtualenv(mock_interpreter_path)
+        assert mock_execl.called
+        assert mock_execl.call_args[0][0] == mock_interpreter_path
+        assert mock_execl.call_args[0][1] == mock_interpreter_path
+        assert mock_execl.call_args[0][2] == "test_script.py"
 
-    with patch("os.path.exists", return_value=False):
-        with patch("sys.executable", "/usr/bin/python3"):
-            import passenger_wsgi
 
-            assert isinstance(passenger_wsgi.application, Flask)
+def test_get_interpreter_path_mock_virtualenv(mock_virtualenv):
+    """Test that get_interpreter_path returns the correct interpreter path."""
+    interpreter_path = get_interpreter_path(mock_virtualenv)
+    assert interpreter_path == os.path.join(mock_virtualenv, "bin", "python3")

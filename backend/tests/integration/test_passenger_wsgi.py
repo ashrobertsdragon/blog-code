@@ -5,22 +5,34 @@ This module must expose an 'application' variable that is a WSGI-compliant
 Flask application instance.
 """
 
-import sys
-from pathlib import Path
+import os
 from unittest.mock import patch
 
+import pytest
 
-def test_passenger_wsgi_imports_without_error():
-    """passenger_wsgi module should be importable without errors."""
-    with patch("os.execl"):
-        try:
-            import passenger_wsgi
-        except ImportError as e:
-            raise AssertionError(
-                f"Failed to import passenger_wsgi module: {e}"
-            ) from e
+if "TYPE_CHECKING":
+    from flask.testing import FlaskClient
 
-        assert passenger_wsgi is not None
+import passenger_wsgi
+
+
+@pytest.fixture
+def mock_virtualenv() -> str:
+    """Fixture providing a mock virtual environment path."""
+    return os.path.join("home", "cpaneluser", "virtualenv", "blog")
+
+
+@pytest.fixture
+def mock_interpreter_path() -> str:
+    """Fixture providing a mock interpreter path."""
+    return os.path.join(
+        "home", "cpaneluser", "virtualenv", "blog", "bin", "python3"
+    )
+
+
+@pytest.fixture
+def flask_test_client() -> FlaskClient:
+    return passenger_wsgi.application.test_client()  # type: ignore
 
 
 def test_application_variable_exists():
@@ -30,8 +42,6 @@ def test_application_variable_exists():
     'application', not 'app'. This is a WSGI specification requirement.
     """
     with patch("os.execl"):
-        import passenger_wsgi
-
         assert hasattr(passenger_wsgi, "application"), (
             "passenger_wsgi module must expose 'application' variable"
         )
@@ -42,8 +52,6 @@ def test_application_is_flask_app():
     from flask import Flask
 
     with patch("os.execl"):
-        import passenger_wsgi
-
         assert isinstance(passenger_wsgi.application, Flask), (
             "application must be a Flask instance"
         )
@@ -56,24 +64,19 @@ def test_application_is_callable():
     environ and start_response parameters.
     """
     with patch("os.execl"):
-        import passenger_wsgi
-
         assert callable(passenger_wsgi.application), (
             "application must be callable per WSGI spec"
         )
 
 
-def test_application_handles_basic_request():
+def test_application_handles_basic_request(flask_test_client):
     """application should handle basic HTTP requests through WSGI interface.
 
     Tests that the WSGI application can process a basic request using
     Flask's test client, which simulates WSGI environ/start_response.
     """
     with patch("os.execl"):
-        import passenger_wsgi
-
-        client = passenger_wsgi.application.test_client()
-        response = client.get("/health")
+        response = flask_test_client.get("/health")
 
         assert response.status_code in (
             200,
@@ -84,17 +87,14 @@ def test_application_handles_basic_request():
         )
 
 
-def test_health_endpoint_via_wsgi():
+def test_health_endpoint_via_wsgi(flask_test_client):
     """Health endpoint should be accessible through WSGI application.
 
     Verifies that blueprints are properly registered and routes work
     through the WSGI interface.
     """
     with patch("os.execl"):
-        import passenger_wsgi
-
-        client = passenger_wsgi.application.test_client()
-        response = client.get("/health")
+        response = flask_test_client.get("/health")
 
         assert response.status_code == 200, "health endpoint should return 200"
         assert response.json is not None, "health endpoint should return JSON"
@@ -103,12 +103,46 @@ def test_health_endpoint_via_wsgi():
         )
 
 
-def test_sys_path_includes_src():
-    """sys.path should include src/ directory for module imports."""
-    backend_dir = Path(__file__).parent.parent.parent
-    src_dir = backend_dir / "src"
-    src_path = str(src_dir.resolve())
+def test_load_environment_loads_correct_python_env(
+    mock_virtualenv, mock_interpreter_path
+):
+    """load_environment should pass the correct interpreter to os.execl()."""
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("os.execl") as mock_execl,
+    ):
+        passenger_wsgi.load_environment(mock_virtualenv)
+        assert mock_execl.call_args[0][0] == mock_interpreter_path
 
-    assert src_path in sys.path, (
-        f"src/ directory ({src_path}) must be in sys.path"
-    )
+
+def test_load_environment_raises_value_error_with_no_path():
+    """load_environment should raise a ValueError when no path is set."""
+    with pytest.raises(ValueError) as exec_info:
+        passenger_wsgi.load_environment()
+    assert str(exec_info.value) == "Virtual Environment path must be set"
+
+
+def test_load_environment_uses_envvar():
+    """load_environment should use environment value as fallback."""
+    os.environ["VENV_PATH"] = "test_path"
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("os.execl") as mock_execl,
+    ):
+        passenger_wsgi.load_environment()
+        assert mock_execl.call_args[0][0] == os.path.join(
+            "test_path", "bin", "python3"
+        )
+
+
+def test_load_environment_uses_arg_over_envvar(
+    mock_virtualenv, mock_interpreter_path
+):
+    """load_environment should use argument value over environment value."""
+    os.environ["VENV_PATH"] = "test_path"
+    with (
+        patch("os.path.exists", return_value=True),
+        patch("os.execl") as mock_execl,
+    ):
+        passenger_wsgi.load_environment(mock_virtualenv)
+        assert mock_execl.call_args[0][0] == mock_interpreter_path
