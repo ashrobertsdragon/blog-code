@@ -5,12 +5,11 @@ shared hosting. It handles virtual environment bootstrap and Flask application
 initialization.
 
 Environment Variables:
-    VIRTUAL_ENV: Path to Python virtual environment (uv-managed).
-                 Defaults to /home/cpaneluser/virtualenv/blog if not set.
+    VENV_PATH: Path to Python virtual environment (uv-managed).
+               Defaults to /home/cpaneluser/virtualenv/blog if not set.
 
 Deployment Notes:
     - Passenger requires the WSGI application object to be named 'application'
-    - Virtual environment must be created with uv: `uv venv`
     - Dependencies must be synced: `uv sync`
     - This file should be placed in the application root directory
     - Passenger will execute this file to start the application
@@ -27,13 +26,14 @@ References:
 import os
 import sys
 
+from backend.main import create_app
+
 
 def get_interpreter_path(venv_path: str) -> str:
     """Get the path to the Python interpreter in the virtual environment.
 
     Args:
-        venv_path: Path to virtual environment. If None, reads from
-                   VIRTUAL_ENV environment variable or uses default.
+        venv_path: Path to virtual environment.
 
     Returns:
         Absolute path to the Python 3 interpreter.
@@ -76,10 +76,7 @@ def load_environment(path: str | None = None) -> None:
         bootstrap_virtualenv(interpreter)
 
 
-from backend.main import create_app  # noqa: E402
+if not os.environ.get("FLASK_ENV") == "TESTING":
+    load_environment()
 
 application = create_app()
-
-
-if __name__ == "__main__":
-    load_environment()

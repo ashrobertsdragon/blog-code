@@ -9,9 +9,7 @@ import os
 from unittest.mock import patch
 
 import pytest
-
-if "TYPE_CHECKING":
-    from flask.testing import FlaskClient
+from flask.testing import FlaskClient
 
 import passenger_wsgi
 
@@ -31,8 +29,8 @@ def mock_interpreter_path() -> str:
 
 
 @pytest.fixture
-def flask_test_client() -> FlaskClient:  # type: ignore
-    return passenger_wsgi.application.test_client()  # type: ignore
+def flask_test_client() -> FlaskClient:
+    return passenger_wsgi.application.test_client()
 
 
 def test_application_variable_exists():
