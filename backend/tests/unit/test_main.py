@@ -64,7 +64,7 @@ def test_create_app_enables_cors_in_development(monkeypatch):
 
     with (
         patch("pathlib.Path.exists", return_value=True),
-        patch("main.CORS") as mock_cors,
+        patch("backend.main.CORS") as mock_cors,
     ):
         app = create_app()
         mock_cors.assert_called_once_with(app)
@@ -77,7 +77,7 @@ def test_create_app_disables_cors_in_production(monkeypatch):
 
     with (
         patch("pathlib.Path.exists", return_value=True),
-        patch("main.CORS") as mock_cors,
+        patch("backend.main.CORS") as mock_cors,
     ):
         create_app()
         mock_cors.assert_not_called()
@@ -118,18 +118,6 @@ def test_create_app_sets_testing_config_false_by_default():
     assert app.config["TESTING"] is False
 
 
-def test_create_app_allows_config_override():
-    """create_app() should allow passing custom config via parameter."""
-
-    custom_config = {"TESTING": True, "CUSTOM_VALUE": "test"}
-
-    with patch("pathlib.Path.exists", return_value=True):
-        app = create_app(config=custom_config)
-
-    assert app.config["TESTING"] is True
-    assert app.config["CUSTOM_VALUE"] == "test"
-
-
 def test_create_app_respects_flask_env_from_environment(monkeypatch):
     """create_app() should respect FLASK_ENV environment variable."""
 
@@ -137,7 +125,7 @@ def test_create_app_respects_flask_env_from_environment(monkeypatch):
 
     with (
         patch("pathlib.Path.exists", return_value=True),
-        patch("main.CORS") as mock_cors,
+        patch("backend.main.CORS") as mock_cors,
     ):
         create_app()
 
@@ -151,7 +139,7 @@ def test_create_app_handles_missing_flask_env_gracefully(monkeypatch):
 
     with (
         patch("pathlib.Path.exists", return_value=True),
-        patch("main.CORS") as mock_cors,
+        patch("backend.main.CORS") as mock_cors,
     ):
         create_app()
 

@@ -86,7 +86,9 @@ def test_health_db_endpoint_accessible(client, dev_settings):
     mock_session = MagicMock(spec=Session)
     mock_session.exec.return_value = MagicMock()
 
-    with patch("api.routes.health.get_db", return_value=iter([mock_session])):
+    with patch(
+        "backend.api.routes.health.get_db", return_value=iter([mock_session])
+    ):
         response = client.get("/health/db")
 
     assert response.status_code == 200
@@ -104,7 +106,7 @@ def test_health_github_endpoint_accessible(client):
     mock_response = MagicMock()
     mock_response.status_code = 200
 
-    with patch("api.routes.health.requests.get") as mock_get:
+    with patch("backend.api.routes.health.requests.get") as mock_get:
         mock_get.return_value = mock_response
         response = client.get("/health/github")
 
@@ -121,9 +123,6 @@ def test_static_files_served_correctly(client):
     The Path.exists() mock makes Flask think files exist, so it returns 200.
     """
     response = client.get("/static/js/main.abc123.js")
-
-    # Flask's built-in static serving handles /static/*
-    # Path.exists() mock returns True, so Flask serves the "file"
     assert response.status_code == 200
 
 
