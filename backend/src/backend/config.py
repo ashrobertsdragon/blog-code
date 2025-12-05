@@ -14,6 +14,7 @@ class FlaskEnv(StrEnum):
 
     PRODUCTION = "PRODUCTION"
     DEVELOPMENT = "DEVELOPMENT"
+    TESTING = "TESTING"
 
 
 class DBSettings(BaseSettings):
@@ -51,6 +52,13 @@ class DBSettings(BaseSettings):
             f"@{self.DB_HOST}/{self.DB_NAME}"
         )
         return str(db)
+
+
+class TestDBSettings(DBSettings):
+    """Settings for testing."""
+
+    model_config = SettingsConfigDict(env_prefix="LOCAL_")
+    FLASK_ENV: FlaskEnv = FlaskEnv.TESTING
 
 
 class DevDBSettings(DBSettings):
