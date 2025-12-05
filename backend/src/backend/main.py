@@ -18,7 +18,7 @@ from backend.config import FlaskEnv
 logger = logging.getLogger(__name__)
 
 
-def create_app(config: dict | None = None) -> Flask:
+def create_app() -> Flask:
     """Create and configure the Flask application.
 
     Args:
@@ -40,11 +40,6 @@ def create_app(config: dict | None = None) -> Flask:
         template_folder=str(build_dir),
     )
 
-    app.config["TESTING"] = False
-
-    if config:
-        app.config.update(config)
-
     flask_env = os.environ.get("FLASK_ENV", FlaskEnv.PRODUCTION)
 
     if not build_dir.exists():
@@ -56,7 +51,7 @@ def create_app(config: dict | None = None) -> Flask:
             "Frontend build directory not found. SPA routes will return 503."
         )
 
-    if flask_env == FlaskEnv.DEVELOPMENT:
+    if flask_env in [FlaskEnv.TESTING, FlaskEnv.DEVELOPMENT]:
         CORS(app)
 
     app.register_blueprint(health_bp, url_prefix="")
