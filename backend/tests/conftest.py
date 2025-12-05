@@ -2,7 +2,7 @@
 
 import pytest
 
-from config import DevDBSettings
+from backend.config import DevDBSettings
 
 
 @pytest.fixture

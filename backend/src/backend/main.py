@@ -9,11 +9,10 @@ import os
 from pathlib import Path
 from urllib.parse import unquote
 
-from flask import Flask, Response, jsonify, send_from_directory
-from flask_cors import CORS
-
 from api.routes.health import health_bp
 from config import FlaskEnv
+from flask import Flask, Response, jsonify, send_from_directory
+from flask_cors import CORS
 
 logger = logging.getLogger(__name__)
 

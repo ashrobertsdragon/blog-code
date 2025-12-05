@@ -76,7 +76,7 @@ def load_environment(path: str | None = None) -> None:
         bootstrap_virtualenv(interpreter)
 
 
-from main import create_app  # noqa: E402
+from backend.main import create_app  # noqa: E402
 
 application = create_app()
 

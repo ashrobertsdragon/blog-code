@@ -8,10 +8,9 @@ import logging
 
 import requests
 from flask import Blueprint, Response, jsonify
+from infrastructure.persistence.database import get_db
 from sqlalchemy import text
 from sqlmodel import select
-
-from infrastructure.persistence.database import get_db
 
 logger = logging.getLogger(__name__)
 

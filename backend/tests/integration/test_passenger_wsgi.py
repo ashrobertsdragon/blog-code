@@ -31,7 +31,7 @@ def mock_interpreter_path() -> str:
 
 
 @pytest.fixture
-def flask_test_client() -> FlaskClient:
+def flask_test_client() -> FlaskClient:  # type: ignore
     return passenger_wsgi.application.test_client()  # type: ignore
 
 

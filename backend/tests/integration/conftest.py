@@ -5,6 +5,8 @@ from unittest.mock import patch
 
 import pytest
 
+from backend.main import create_app
+
 
 @pytest.fixture
 def mock_build_dir():
@@ -20,7 +22,6 @@ def app(dev_settings, mock_build_dir):
 
     Uses the actual create_app() factory function with mocked build directory.
     """
-    from main import create_app
 
     with patch("pathlib.Path.exists", return_value=True):
         app = create_app(config={"TESTING": True})

@@ -8,10 +8,9 @@ injection.
 from collections.abc import Generator
 from functools import lru_cache
 
+from config import get_db_url
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, create_engine
-
-from config import get_db_url
 
 
 @lru_cache

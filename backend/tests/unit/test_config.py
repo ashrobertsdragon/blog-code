@@ -6,7 +6,7 @@ Tests Pydantic DBSettings class and database url.
 import pytest
 from pydantic import ValidationError
 
-from config import (
+from backend.config import (
     DBSettings,
     DevDBSettings,
     FlaskEnv,
@@ -115,7 +115,7 @@ def test_db_host_is_localhost(base_settings):
 )
 def test_settings_no_hardcoded_secrets(pattern):
     """DBSettings class should not contain any hardcoded secrets."""
-    import config
+    from backend import config
 
     with open(config.__file__) as f:  # type: ignore # uv ty false positive
         config_source = f.read()
