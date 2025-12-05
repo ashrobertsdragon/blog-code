@@ -3,9 +3,8 @@
 import os
 
 import pytest
-from sqlmodel import select
-
 from infrastructure.persistence.database import get_db
+from sqlmodel import select
 
 
 @pytest.mark.skipif(
