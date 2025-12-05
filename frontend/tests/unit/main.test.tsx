@@ -109,7 +109,6 @@ describe('main entry point', () => {
      * Entry point imports the App component from @/App
      */
     it('should be able to import App component', async () => {
-      // Mock the App component for this test
       const AppModule = { default: () => null }
       expect(AppModule.default).toBeTruthy()
     })
@@ -119,8 +118,6 @@ describe('main entry point', () => {
      * Entry point imports './index.css'
      */
     it('should support CSS imports', async () => {
-      // Vitest with jsdom supports CSS imports
-      // This validates the module system can handle CSS files
       expect(true).toBe(true)
     })
 
@@ -141,7 +138,6 @@ describe('main entry point', () => {
      */
     it('should have React 18+ installed', async () => {
       const React = await import('react')
-      // React 18+ has StrictMode as a symbol
       expect(React.StrictMode).toBeTruthy()
     })
 
@@ -161,9 +157,8 @@ describe('main entry point', () => {
      */
     it('should have createRoot with render method', async () => {
       const ReactDOM = await import('react-dom/client')
-      const createRoot = ReactDOM.createRoot
+      const { createRoot } = ReactDOM
 
-      // Mock test - actual rendering is in integration tests
       expect(createRoot).toBeTruthy()
       expect(typeof createRoot).toBe('function')
     })
@@ -189,8 +184,6 @@ describe('main entry point', () => {
      * Entry point should be a valid ES6 module
      */
     it('should support loading as ES6 module', async () => {
-      // Vite loads main.jsx as ES6 module
-      // Module loading should be supported (verified by successful test execution)
       expect(true).toBe(true)
     })
 
@@ -219,7 +212,7 @@ describe('main entry point', () => {
      */
     it('should support StrictMode in app wrapper', async () => {
       const React = await import('react')
-      const StrictMode = React.StrictMode
+      const { StrictMode } = React
 
       expect(StrictMode).toBeTruthy()
       expect(typeof StrictMode).toBe('symbol')
@@ -231,8 +224,6 @@ describe('main entry point', () => {
      */
     it('should be able to wrap application', async () => {
       const React = await import('react')
-
-      // StrictMode is a valid wrapper component
       expect(React.StrictMode).toBeTruthy()
     })
   })
@@ -243,7 +234,6 @@ describe('main entry point', () => {
      * Vite uses main.jsx as the default entry point
      */
     it('should have main.jsx as entry point', () => {
-      // This is configured in vite.config.js
       expect(true).toBe(true)
     })
 
@@ -252,7 +242,6 @@ describe('main entry point', () => {
      * Styling should be available from entry point
      */
     it('should support CSS file imports', () => {
-      // jsdom in vitest supports CSS imports
       expect(true).toBe(true)
     })
 
@@ -261,7 +250,6 @@ describe('main entry point', () => {
      * Entry point imports from @/App (alias)
      */
     it('should resolve @ alias to src directory', async () => {
-      // Vite alias configured in vite.config.ts
       expect(true).toBe(true)
     })
   })
@@ -317,7 +305,6 @@ describe('main entry point', () => {
       const ReactDOM = await import('react-dom/client')
       const createRoot = ReactDOM.createRoot
 
-      // Verify createRoot is a function that can be called
       expect(typeof createRoot).toBe('function')
     })
 
@@ -329,7 +316,6 @@ describe('main entry point', () => {
       const React = await import('react')
       const ReactDOM = await import('react-dom/client')
 
-      // Should have createRoot, not render
       expect(ReactDOM.createRoot).toBeTruthy()
       expect(React.StrictMode).toBeTruthy()
     })
@@ -346,7 +332,6 @@ describe('main entry point', () => {
 
       expect(rootElement).toBeTruthy()
 
-      // Should be able to create root with element
       expect(typeof ReactDOM.createRoot).toBe('function')
     })
 
@@ -355,7 +340,6 @@ describe('main entry point', () => {
      * Should handle import order correctly
      */
     it('should import modules in correct order', async () => {
-      // React and ReactDOM should be available
       const React = await import('react')
       const ReactDOM = await import('react-dom/client')
 
