@@ -20,9 +20,6 @@ logger = logging.getLogger(__name__)
 def create_app() -> Flask:
     """Create and configure the Flask application.
 
-    Args:
-        build_dir: Optional path to build directory (for testing).
-
     Returns:
         Configured Flask application instance.
 
@@ -81,9 +78,9 @@ def create_app() -> Flask:
         if path.startswith("api/"):
             return jsonify({"error": "Not found"}), 404
 
-        if not path:
-            path = "index.html"
+        path = path or "index.html"
         file_path = build_dir / path
+
         try:
             if file_path.is_file():
                 return send_from_directory(str(build_dir), path)

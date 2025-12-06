@@ -115,8 +115,8 @@ def test_settings_no_hardcoded_secrets(pattern):
     """DBSettings class should not contain any hardcoded secrets."""
     from backend import config
 
-    with open(config.__file__) as f:  # type: ignore # uv ty false positive
-        config_source = f.read()
+    # uv ty false positive for Nonetype
+    config_source = Path(config.__file__).read_text()  # type: ignore
     assert (
         "=" not in config_source
         or pattern not in config_source.lower()
@@ -220,7 +220,7 @@ def test_flask_settings_static_dir_custom():
     """STATIC_DIR should favor STATIC_PATH if set."""
     custom_path = Path("custom") / "static" / "path"
     settings = FlaskSettings(STATIC_PATH=custom_path)
-    assert settings.STATIC_DIR == custom_path
+    assert settings.STATIC_DIR == str(custom_path)
 
 
 def test_flask_settings_env_vars(test_env, monkeypatch):

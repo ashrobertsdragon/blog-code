@@ -101,46 +101,53 @@ def test_health_endpoint_via_wsgi(flask_test_client):
         )
 
 
-def test_load_environment_loads_correct_python_env(
+def test_ensure_virtualenv_loads_correct_python_env(
     mock_virtualenv, mock_interpreter_path
 ):
-    """load_environment should pass the correct interpreter to os.execl()."""
+    """ensure_virtualenv should pass the correct interpreter to os.execl()."""
     with (
         patch("os.path.exists", return_value=True),
         patch("os.execl") as mock_execl,
+        patch("sys.executable", "/usr/bin/python3"),
+        patch("sys.platform", "linux"),
     ):
-        passenger_wsgi.load_environment(mock_virtualenv)
+        passenger_wsgi.ensure_virtualenv(mock_virtualenv)
         assert mock_execl.call_args[0][0] == mock_interpreter_path
 
 
-def test_load_environment_raises_value_error_with_no_path():
-    """load_environment should raise a ValueError when no path is set."""
+def test_ensure_virtualenv_raises_value_error_with_no_path(monkeypatch):
+    """ensure_virtualenv should raise a ValueError when no path is set."""
+    monkeypatch.delenv("VENV_PATH", raising=False)
     with pytest.raises(ValueError) as exec_info:
-        passenger_wsgi.load_environment()
+        passenger_wsgi.ensure_virtualenv()
     assert str(exec_info.value) == "Virtual Environment path must be set"
 
 
-def test_load_environment_uses_envvar():
-    """load_environment should use environment value as fallback."""
-    os.environ["VENV_PATH"] = "test_path"
+def test_ensure_virtualenv_uses_envvar(monkeypatch):
+    """ensure_virtualenv should use environment value as fallback."""
+    monkeypatch.setenv("VENV_PATH", "test_path")
     with (
         patch("os.path.exists", return_value=True),
         patch("os.execl") as mock_execl,
+        patch("sys.executable", "/usr/bin/python3"),
+        patch("sys.platform", "linux"),
     ):
-        passenger_wsgi.load_environment()
+        passenger_wsgi.ensure_virtualenv()
         assert mock_execl.call_args[0][0] == os.path.join(
             "test_path", "bin", "python3"
         )
 
 
-def test_load_environment_uses_arg_over_envvar(
-    mock_virtualenv, mock_interpreter_path
+def test_ensure_virtualenv_uses_arg_over_envvar(
+    mock_virtualenv, mock_interpreter_path, monkeypatch
 ):
-    """load_environment should use argument value over environment value."""
-    os.environ["VENV_PATH"] = "test_path"
+    """ensure_virtualenv should use argument value over environment value."""
+    monkeypatch.setenv("VENV_PATH", "test_path")
     with (
         patch("os.path.exists", return_value=True),
         patch("os.execl") as mock_execl,
+        patch("sys.executable", "/usr/bin/python3"),
+        patch("sys.platform", "linux"),
     ):
-        passenger_wsgi.load_environment(mock_virtualenv)
+        passenger_wsgi.ensure_virtualenv(mock_virtualenv)
         assert mock_execl.call_args[0][0] == mock_interpreter_path

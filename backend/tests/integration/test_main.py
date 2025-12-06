@@ -235,10 +235,10 @@ def test_backslash_path_traversal_blocked(client):
 
 
 def test_file_access_exception_handling(client):
-    """OSError during file access should fall back to index.html.
+    """OSError during file access should return 503 Service Unavailable.
 
     When file.is_file() raises OSError (permissions, I/O error),
-    the SPA handler should gracefully fall back to serving index.html.
+    the SPA handler should return a 503 error instead of crashing.
     """
     with patch(
         "pathlib.Path.is_file", side_effect=OSError("Permission denied")

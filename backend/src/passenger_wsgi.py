@@ -26,57 +26,29 @@ References:
 import os
 import sys
 
-from backend.main import create_app
 
-
-def get_interpreter_path(venv_path: str) -> str:
-    """Get the path to the Python interpreter in the virtual environment.
+def ensure_virtualenv(path: str | None = None) -> None:
+    """Ensure we are running inside the configured virtual environment.
 
     Args:
-        venv_path: Path to virtual environment.
-
-    Returns:
-        Absolute path to the Python 3 interpreter.
+        path: Optional override for virtual environment path.
     """
-    return os.path.join(venv_path, "bin", "python3")
-
-
-def should_bootstrap(interpreter_path: str, current_executable: str) -> bool:
-    """Determine if virtual environment bootstrap is needed.
-
-    Args:
-        interpreter_path: Path to desired Python interpreter.
-        current_executable: Path to currently running Python interpreter.
-
-    Returns:
-        True if bootstrap is needed (paths differ and target exists).
-    """
-    return current_executable != interpreter_path and os.path.exists(
-        interpreter_path
-    )
-
-
-def bootstrap_virtualenv(interpreter_path: str) -> None:
-    """Re-execute the script using the virtual environment Python.
-
-    Args:
-        interpreter_path: Path to the Python interpreter to use.
-    """
-    os.execl(interpreter_path, interpreter_path, *sys.argv)
-
-
-def load_environment(path: str | None = None) -> None:
-    """Load virtual environment."""
     venv_path = path or os.environ.get("VENV_PATH")
     if not venv_path:
         raise ValueError("Virtual Environment path must be set")
-    interpreter = get_interpreter_path(venv_path)
 
-    if should_bootstrap(interpreter, sys.executable):
-        bootstrap_virtualenv(interpreter)
+    if sys.platform == "win32":
+        python_bin = os.path.join(venv_path, "Scripts", "python.exe")
+    else:
+        python_bin = os.path.join(venv_path, "bin", "python3")
+
+    if sys.executable != python_bin and os.path.exists(python_bin):
+        os.execl(python_bin, python_bin, *sys.argv)
 
 
-if not os.environ.get("FLASK_ENV") == "TESTING":
-    load_environment()
+if os.environ.get("FLASK_ENV") != "TESTING":
+    ensure_virtualenv()
+
+from backend.main import create_app  # noqa: E402
 
 application = create_app()

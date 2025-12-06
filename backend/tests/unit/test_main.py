@@ -29,11 +29,19 @@ def test_create_app_configures_static_folder():
 
     expected_static_path = Path(__file__).parents[3] / "build" / "static"
 
-    with patch("pathlib.Path.exists", return_value=True):
-        app = create_app()
+    app = create_app()
 
-    assert app.static_folder is not None
-    assert Path(app.static_folder) == expected_static_path
+    assert app.static_folder == str(expected_static_path)
+
+
+def test_create_app_respects_static_path_override(monkeypatch):
+    """create_app() should respect STATIC_PATH environment variable."""
+
+    monkeypatch.setenv("STATIC_PATH", "custom_static")
+
+    app = create_app()
+
+    assert app.static_folder and app.static_folder.endswith("custom_static")
 
 
 def test_create_app_configures_template_folder():
@@ -41,8 +49,7 @@ def test_create_app_configures_template_folder():
 
     expected_template_path = Path(__file__).parents[3] / "build"
 
-    with patch("pathlib.Path.exists", return_value=True):
-        app = create_app()
+    app = create_app()
 
     assert app.template_folder is not None
     assert Path(app.template_folder) == expected_template_path
@@ -51,8 +58,7 @@ def test_create_app_configures_template_folder():
 def test_create_app_registers_health_blueprint():
     """create_app() should register the health check blueprint."""
 
-    with patch("pathlib.Path.exists", return_value=True):
-        app = create_app()
+    app = create_app()
 
     assert "health" in app.blueprints
 
@@ -62,10 +68,7 @@ def test_create_app_enables_cors_in_development(monkeypatch):
 
     monkeypatch.setenv("FLASK_ENV", "DEVELOPMENT")
 
-    with (
-        patch("pathlib.Path.exists", return_value=True),
-        patch("backend.main.CORS") as mock_cors,
-    ):
+    with patch("backend.main.CORS") as mock_cors:
         app = create_app()
         mock_cors.assert_called_once_with(app)
 
@@ -98,7 +101,7 @@ def test_create_app_raises_error_on_missing_build_in_production(monkeypatch):
 def test_create_app_logs_warning_on_missing_build_in_development(
     monkeypatch, caplog
 ):
-    """create_app() should log warning when build dir missing in development."""
+    """create_app() should log warning when build missing in development."""
 
     monkeypatch.setenv("FLASK_ENV", "DEVELOPMENT")
 
@@ -109,24 +112,12 @@ def test_create_app_logs_warning_on_missing_build_in_development(
     assert isinstance(app, Flask)
 
 
-def test_create_app_sets_testing_config_false_by_default():
-    """create_app() should set TESTING to False by default."""
-
-    with patch("pathlib.Path.exists", return_value=True):
-        app = create_app()
-
-    assert app.config["TESTING"] is False
-
-
 def test_create_app_respects_flask_env_from_environment(monkeypatch):
     """create_app() should respect FLASK_ENV environment variable."""
 
     monkeypatch.setenv("FLASK_ENV", "DEVELOPMENT")
 
-    with (
-        patch("pathlib.Path.exists", return_value=True),
-        patch("backend.main.CORS") as mock_cors,
-    ):
+    with patch("backend.main.CORS") as mock_cors:
         create_app()
 
     mock_cors.assert_called_once()

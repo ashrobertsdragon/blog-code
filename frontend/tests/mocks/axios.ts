@@ -25,24 +25,50 @@ const mockAxiosInstance: AxiosInstance = {
   defaults: {
     headers: {
       common: {},
+      delete: {},
+      get: {},
+      head: {},
+      post: {},
+      put: {},
+      patch: {},
     },
+    baseURL: '',
   },
-} as AxiosInstance
+  interceptors: {
+    request: { use: vi.fn(), eject: vi.fn(), clear: vi.fn() },
+    response: { use: vi.fn(), eject: vi.fn(), clear: vi.fn() },
+  },
+  getUri: vi.fn(),
+  head: vi.fn(),
+  options: vi.fn(),
+  postForm: vi.fn(),
+  putForm: vi.fn(),
+  patchForm: vi.fn(),
+  formToJSON: vi.fn(),
+  create: vi.fn(),
+} as unknown as AxiosInstance
 
 const mockAxios: AxiosStatic = {
-  get: mockAxiosGet,
-  post: mockAxiosPost,
-  put: mockAxiosPut,
-  delete: mockAxiosDelete,
-  patch: mockAxiosPatch,
-  request: mockAxiosRequest,
+  ...mockAxiosInstance,
   create: vi.fn(() => mockAxiosInstance),
-  defaults: {
-    headers: {
-      common: {},
-    },
+  isAxiosError: vi.fn(),
+  isCancel: vi.fn(),
+  all: vi.fn(),
+  spread: vi.fn(),
+  Cancel: vi.fn(),
+  CancelToken: {
+    source: vi.fn(),
   },
-} as AxiosStatic
+  Axios: vi.fn(),
+  toFormData: vi.fn(),
+  formToJSON: vi.fn(),
+  AxiosError: vi.fn(),
+  HttpStatusCode: {},
+  VERSION: '1.0.0',
+  getAdapter: vi.fn(),
+} as unknown as AxiosStatic
+
+mockAxios.create = vi.fn(() => mockAxiosInstance)
 
 export default mockAxios
 
