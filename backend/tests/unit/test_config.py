@@ -3,6 +3,9 @@
 Tests Pydantic DBSettings class and database url.
 """
 
+import os
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
@@ -10,6 +13,7 @@ from backend.config import (
     DBSettings,
     DevDBSettings,
     FlaskEnv,
+    FlaskSettings,
     ProductionDBSettings,
     _db_settings,
     get_db_url,
@@ -20,11 +24,6 @@ from backend.config import (
 def clear_caches():
     get_db_url.cache_clear()
     _db_settings.cache_clear()
-
-
-def test_settings_can_be_imported():
-    """DBSettings class should be importable from config module."""
-    assert DBSettings is not None
 
 
 def test_settings_has_all_required_fields():
@@ -187,3 +186,49 @@ def test_get_db_url_is_cached(dev_settings, clear_caches):
     url1 = get_db_url()
     url2 = get_db_url()
     assert url1 is url2
+
+
+def test_flask_settings_has_all_required_fields():
+    """FlaskSettings should define all required configuration fields."""
+    assert hasattr(FlaskSettings, "model_fields")
+    required_fields = {
+        "FLASK_ENV",
+        "BUILD_DIR",
+        "STATIC_PATH",
+    }
+    settings_fields = set(FlaskSettings.model_fields.keys())
+    assert required_fields.issubset(settings_fields), (
+        f"Missing fields: {required_fields - settings_fields}"
+    )
+
+
+def test_flask_settings_defaults(clean_env):
+    """FlaskSettings should have correct default values."""
+    settings = FlaskSettings()
+    assert settings.FLASK_ENV == FlaskEnv.PRODUCTION
+    assert settings.BUILD_DIR.name == "build"
+    assert settings.STATIC_PATH is None
+
+
+def test_flask_settings_static_dir_default():
+    """STATIC_DIR should default to BUILD_DIR / 'static'."""
+    settings = FlaskSettings()
+    expected_static_dir = settings.BUILD_DIR / "static"
+    assert settings.STATIC_DIR == str(expected_static_dir)
+
+
+def test_flask_settings_static_dir_custom():
+    """STATIC_DIR should favor STATIC_PATH if set."""
+    custom_path = os.path.join("custom", "static", "path")
+    settings = FlaskSettings(STATIC_PATH=custom_path)
+    assert settings.STATIC_DIR == custom_path
+
+
+def test_flask_settings_env_vars(test_env, monkeypatch):
+    """FlaskSettings should read values from environment variables."""
+    monkeypatch.setenv("BUILD_DIR", "test_build_dir")
+    monkeypatch.setenv("STATIC_PATH", "test_static_path")
+    settings = FlaskSettings()
+    assert settings.FLASK_ENV == FlaskEnv.TESTING
+    assert settings.BUILD_DIR == Path("test_build_dir")
+    assert settings.STATIC_PATH == Path("test_static_path")

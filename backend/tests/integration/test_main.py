@@ -9,7 +9,9 @@ Tests Flask's ability to serve React SPA with proper routing:
 These tests follow TDD RED phase - they WILL FAIL until implementation exists.
 """
 
-from unittest.mock import mock_open, patch
+from unittest.mock import MagicMock, patch
+
+from sqlmodel import Session
 
 
 def test_root_path_serves_index_html(client):
@@ -18,10 +20,7 @@ def test_root_path_serves_index_html(client):
     The root path is the primary entry point for the React SPA.
     Flask should serve index.html which loads the React application.
     """
-    mock_html = "<html><body><div id='root'></div></body></html>"
-
-    with patch("builtins.open", mock_open(read_data=mock_html)):
-        response = client.get("/")
+    response = client.get("/")
 
     assert response.status_code == 200
     assert b"<div id='root'></div>" in response.data
@@ -35,10 +34,7 @@ def test_spa_route_serves_index_html(client):
     Flask must serve index.html for these paths (not 404), allowing
     React Router to take over navigation.
     """
-    mock_html = "<html><body><div id='root'></div></body></html>"
-
-    with patch("builtins.open", mock_open(read_data=mock_html)):
-        response = client.get("/posts/my-first-post")
+    response = client.get("/posts/my-first-post")
 
     assert response.status_code == 200
     assert b"<div id='root'></div>" in response.data
@@ -51,10 +47,7 @@ def test_nested_spa_route_serves_index_html(client):
     Deeply nested client-side routes must also receive index.html,
     not Flask 404 errors. This enables multi-level routing in React.
     """
-    mock_html = "<html><body><div id='root'></div></body></html>"
-
-    with patch("builtins.open", mock_open(read_data=mock_html)):
-        response = client.get("/admin/settings")
+    response = client.get("/admin/settings")
 
     assert response.status_code == 200
     assert b"<div id='root'></div>" in response.data
@@ -79,10 +72,6 @@ def test_health_db_endpoint_accessible(client, dev_settings):
 
     Verify health blueprint routes are not intercepted by SPA routing.
     """
-    from unittest.mock import MagicMock
-
-    from sqlmodel import Session
-
     mock_session = MagicMock(spec=Session)
     mock_session.exec.return_value = MagicMock()
 
@@ -101,8 +90,6 @@ def test_health_github_endpoint_accessible(client):
 
     Verify all health endpoints remain functional with SPA routing.
     """
-    from unittest.mock import MagicMock
-
     mock_response = MagicMock()
     mock_response.status_code = 200
 
@@ -133,7 +120,7 @@ def test_missing_index_html_returns_503(client):
     Flask should return a 503 Service Unavailable error rather than
     crashing or returning an unclear error.
     """
-    with patch("pathlib.Path.exists", return_value=False):
+    with patch("pathlib.Path.is_file", return_value=False):
         response = client.get("/")
 
     assert response.status_code == 503
@@ -160,10 +147,7 @@ def test_spa_route_with_query_params_serves_index_html(client):
     Client-side routes with query parameters must still receive index.html.
     React Router can then parse and use the query parameters.
     """
-    mock_html = "<html><body><div id='root'></div></body></html>"
-
-    with patch("builtins.open", mock_open(read_data=mock_html)):
-        response = client.get("/search?q=flask&page=2")
+    response = client.get("/search?q=flask&page=2")
 
     assert response.status_code == 200
     assert b"<div id='root'></div>" in response.data
@@ -176,10 +160,7 @@ def test_spa_route_with_trailing_slash_serves_index_html(client):
     Routes with trailing slashes should also receive index.html for
     consistent client-side routing behavior.
     """
-    mock_html = "<html><body><div id='root'></div></body></html>"
-
-    with patch("builtins.open", mock_open(read_data=mock_html)):
-        response = client.get("/posts/")
+    response = client.get("/posts/")
 
     assert response.status_code == 200
     assert b"<div id='root'></div>" in response.data
@@ -192,13 +173,8 @@ def test_favicon_served_from_build_directory(client):
     Static assets in the build root (favicon, manifest.json, etc.) should
     be served directly from the build directory.
     """
-    with patch("flask.helpers.send_from_directory") as mock_send:
-        mock_send.return_value.status_code = 200
-        mock_send.return_value.content_type = "image/x-icon"
-
-        response = client.get("/favicon.ico")
-
-    assert response.status_code == 200 or mock_send.called
+    response = client.get("/favicon.ico")
+    assert response.status_code == 200
 
 
 def test_manifest_json_served_from_build_directory(client):
@@ -206,13 +182,8 @@ def test_manifest_json_served_from_build_directory(client):
 
     PWA manifest and other root-level static files should be accessible.
     """
-    with patch("flask.helpers.send_from_directory") as mock_send:
-        mock_send.return_value.status_code = 200
-        mock_send.return_value.content_type = "application/json"
-
-        response = client.get("/manifest.json")
-
-    assert response.status_code == 200 or mock_send.called
+    response = client.get("/manifest.json")
+    assert response.status_code == 200
 
 
 def test_path_traversal_blocked(client):
@@ -274,5 +245,5 @@ def test_file_access_exception_handling(client):
     ):
         response = client.get("/some-path")
 
-    assert response.status_code == 200
-    assert b"<html>" in response.data or response.status_code == 503
+    assert response.status_code == 503
+    assert b"unavailable" in response.data.lower()

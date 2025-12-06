@@ -5,7 +5,6 @@ including SPA routing, CORS handling, and blueprint registration.
 """
 
 import logging
-import os
 from pathlib import Path
 from urllib.parse import unquote
 
@@ -13,7 +12,7 @@ from flask import Flask, Response, jsonify, send_from_directory
 from flask_cors import CORS
 
 from backend.api.routes.health import health_bp
-from backend.config import FlaskEnv
+from backend.config import FlaskEnv, FlaskSettings
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +21,7 @@ def create_app() -> Flask:
     """Create and configure the Flask application.
 
     Args:
-        config: Optional dictionary of configuration overrides.
+        build_dir: Optional path to build directory (for testing).
 
     Returns:
         Configured Flask application instance.
@@ -30,17 +29,17 @@ def create_app() -> Flask:
     Raises:
         RuntimeError: If build directory is missing in production environment.
     """
-    build_dir = Path(__file__).parents[3] / "build"
-    static_dir = build_dir / "static"
+    settings = FlaskSettings()
+    flask_env: FlaskEnv = settings.FLASK_ENV
+    build_dir: Path = settings.BUILD_DIR
+    static_dir: str = settings.STATIC_DIR
 
     app = Flask(
         __name__,
-        static_folder=str(static_dir),
+        static_folder=static_dir,
         static_url_path="/static",
         template_folder=str(build_dir),
     )
-
-    flask_env = os.environ.get("FLASK_ENV", FlaskEnv.PRODUCTION)
 
     if not build_dir.exists():
         if flask_env == FlaskEnv.PRODUCTION:
@@ -82,18 +81,22 @@ def create_app() -> Flask:
         if path.startswith("api/"):
             return jsonify({"error": "Not found"}), 404
 
-        if path:
-            file_path = build_dir / path
-            try:
-                if file_path.is_file():
-                    return send_from_directory(str(build_dir), path)
-            except (OSError, ValueError) as e:
-                logger.debug(f"File access error for path '{path}': {e}")
+        if not path:
+            path = "index.html"
+        file_path = build_dir / path
+        try:
+            if file_path.is_file():
+                return send_from_directory(str(build_dir), path)
+        except (OSError, ValueError) as e:
+            logger.debug(f"File access error for path '{path}': {e}")
 
         index_path = build_dir / "index.html"
-        if not index_path.exists():
-            return jsonify({"error": "Service unavailable"}), 503
+        try:
+            if index_path.is_file():
+                return send_from_directory(str(build_dir), "index.html")
+        except (OSError, ValueError) as e:
+            logger.debug(f"Index.html access error: {e}")
 
-        return send_from_directory(str(build_dir), "index.html")
+        return jsonify({"error": "Service unavailable"}), 503
 
     return app
