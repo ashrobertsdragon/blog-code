@@ -3,7 +3,6 @@
 Tests Pydantic DBSettings class and database url.
 """
 
-import os
 from pathlib import Path
 
 import pytest
@@ -219,7 +218,7 @@ def test_flask_settings_static_dir_default():
 
 def test_flask_settings_static_dir_custom():
     """STATIC_DIR should favor STATIC_PATH if set."""
-    custom_path = os.path.join("custom", "static", "path")
+    custom_path = Path("custom") / "static" / "path"
     settings = FlaskSettings(STATIC_PATH=custom_path)
     assert settings.STATIC_DIR == custom_path
 
