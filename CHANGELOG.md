@@ -5,14 +5,73 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Backend**: Implemented Passenger WSGI entry point in `src/passenger_wsgi.py`
+  - Created WSGI-compliant entry point for Phusion Passenger deployment
+  - Implemented virtual environment bootstrap logic with configurable VIRTUAL_ENV environment variable
+  - Imported Flask application via `create_app()` factory pattern
+  - Exported application as 'application' variable (Passenger WSGI requirement)
+  - Comprehensive error handling with actionable debugging information to stderr
+  - Cross-platform compatibility (Windows development, Linux production)
+  - PEP 3333 WSGI specification compliance
+  - Test suite: 9 integration tests covering WSGI interface, variable naming, type verification, request handling, and virtual environment loading, 5 unit tests covering all functions.
+- **Backend**: Fixed build directory path in main.py to match Vite output
+  - Changed from frontend/dist to build/ to match vite.config.ts outDir
+  - Vite outputs to ../build from frontend directory (monorepo/build/)
+  - Updated unit tests to expect build/ instead of frontend/dist
+  - Updated tests to use Path(**file**).parents[3] instead of repeated .parent
+- **CI**: Fixed backend CI workflow to create minimal frontend build structure
+  - Creates build/ directory with build/static/js/ subdirectory
+  - Creates build/index.html with minimal HTML for SPA routing tests
+  - Creates dummy JS file for static file serving tests
+  - Allows SPA routing tests to pass without full frontend build
+  - Backend tests can verify SPA route handling independently
+- **Config**: Removed ty.toml from monorepo
+- **CI**: Added workflow_dispatch and workflow file path triggers to both CI workflows
+  - Backend and frontend CI now trigger on workflow file changes
+  - Added manual trigger capability via workflow_dispatch
+- **Backend**: Implemented Flask application factory pattern in `main.py`
+  - Created `create_app()` factory function with environment-based configuration
+  - Configured Flask with static_folder='dist/static' and template_folder='dist' for React SPA serving
+  - Registered health check blueprint with no URL prefix
+  - Implemented CORS for development environment only (disabled in production)
+  - Added SPA catch-all route serving index.html for client-side routing
+  - Implemented path traversal protection with double URL-decoding and backslash detection
+  - Added security logging for path traversal attempts and file access errors
+  - Production safety: raises RuntimeError if build directory missing in production
+  - Development tolerance: logs warning if build directory missing in development
+  - Comprehensive test suite: 12 unit tests + 18 integration tests (100% coverage for main.py)
+  - Security tests: 5 tests covering path traversal attack vectors (direct, middle, URL-encoded, backslash, exception handling)
+- **Frontend**: Implemented `App.tsx` root component with BrowserRouter routing for Home and NotFound pages.
+- **Frontend**: Implemented `main.tsx` Vite entry point using React 18 createRoot API with StrictMode wrapper.
+- **Frontend**: Added root element creation to test setup for proper DOM initialization in tests.
+
+### Changed
+
+- **Frontend**: Updated entry point from `main.jsx` to `main.tsx` in `index.html`.
+- **Frontend**: Updated tests to correctly expect `React.StrictMode` as `symbol` type (React 18 behavior).
+
+### Fixed
+
+- **Frontend**: Updated frontend dependencies to latest versions.
+- **Frontend**: Corrected Biome configuration to remove redundant include paths.
+- **Frontend**: Separated Vitest configuration into `vitest.config.ts` and ensured shared configuration with `vite.config.ts` using `mergeConfig`.
+
+## v0.1.2 (2025-11-17)
+
+### Fixed
+
+- **CI**: Fixed frontend CI build failure by updating `vitest` to `^4.0.9` and adding `@vitest/coverage-v8`.
+
 ## v0.1.1 (2025-11-14)
 
 ### Refactor
 
 - Refactored `config.py` to introduce `get_db_url()` for obtaining the database connection string, replacing direct instantiation of `DBSettings`.
 - Updated tests in `test_config.py` to reflect the refactoring and added tests for `get_db_url()`.
-
-## [Unreleased]
 
 ### Fixed
 
@@ -162,6 +221,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Integration tests in tests/integration/test_health_endpoints.py with 9 passing tests
   - Created tests/integration/conftest.py with shared fixtures for integration tests
   - All tests verify correct status codes, JSON content types, and error handling
+
+#### Frontend API Service: Health Checks (TDD)
+
+- **Task 15**: Created health check API service with TypeScript
+  - Created frontend/src/services/healthService.ts with axios client
+  - Implemented checkHealth(), checkDatabase(), checkGitHub() methods
+  - Configured axios instance with baseURL from VITE_API_BASE_URL environment variable or '/api' default
+  - Added TypeScript type definitions: HealthResponse, DatabaseHealthResponse, GitHubHealthResponse
+  - All methods properly typed with Promise return types
+  - Errors propagate to caller for proper error handling
+  - Comprehensive test coverage in tests/unit/healthService.test.ts with 6 passing tests
+  - Created tests/mocks/axios.ts with complete axios mock (mocks both default instance and create() factory)
+  - Created tests/setup.ts for Vitest configuration with jest-dom
+  - Configured Vitest in vite.config.ts with jsdom environment and coverage reporting
+  - Added TypeScript support: tsconfig.json and tsconfig.node.json
+  - Installed TypeScript dependencies: typescript, @types/react, @types/react-dom, @types/node
+  - Updated biome.json to include TypeScript file patterns (.ts, .tsx)
+  - All tests use proper TypeScript types and mocking patterns with vi.mock() factory
+  - Tests verify correct endpoint calls, response data handling, and error propagation
+
+#### Frontend Components & Routing (TDD)
+
+- **Task 16**: Created NotFound page component
+  - Created frontend/src/pages/NotFound.tsx with 404 error page
+  - Implemented user-friendly 404 message with Tailwind styling
+  - Added React Router Link component for navigation back to home page
+  - Responsive design with centered layout and proper visual hierarchy
+  - Comprehensive test coverage in tests/unit/NotFound.test.tsx with 3 passing tests
+  - Tests verify 404 message rendering, home link presence and navigation, component styling
+  - All tests use React Testing Library with BrowserRouter wrapper
+  - Component uses Tailwind utility classes for styling (flex, text-9xl, rounded-lg, etc.)
+- Created Home page component with health status display
+  - Created frontend/src/pages/Home.tsx as landing page demonstrating health check integration
+  - Implemented health status fetching from healthService.checkHealth() on component mount
+  - Added loading, error, and success state management using React hooks (useState, useEffect)
+  - Displays "Loading..." message while fetching health data
+  - Shows user-friendly error message on API failure
+  - Renders health status in styled card layout on success
+  - Responsive design with Tailwind CSS styling consistent with NotFound.tsx
+  - Comprehensive test coverage in tests/unit/Home.test.tsx with 17 passing tests (100% statements, 83.33% branches)
+  - Tests verify initial render/loading state, successful health display, error handling, component lifecycle, state transitions, and accessibility
+  - All tests use React Testing Library with proper mocking of healthService
+  - TypeScript with proper HealthResponse interface integration
 
 ### Infrastructure
 

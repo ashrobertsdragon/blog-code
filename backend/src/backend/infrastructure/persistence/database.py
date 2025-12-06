@@ -11,7 +11,7 @@ from functools import lru_cache
 from sqlalchemy.engine import Engine
 from sqlmodel import Session, create_engine
 
-from config import get_db_url
+from backend.config import get_db_url
 
 
 @lru_cache

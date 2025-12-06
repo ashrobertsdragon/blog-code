@@ -5,7 +5,7 @@ import os
 import pytest
 from sqlmodel import select
 
-from infrastructure.persistence.database import get_db
+from backend.infrastructure.persistence.database import get_db
 
 
 @pytest.mark.skipif(

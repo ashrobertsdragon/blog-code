@@ -6,7 +6,7 @@ Tests SQLModel table definitions and field defaults.
 import time
 from datetime import datetime
 
-from infrastructure.persistence.models import Post, User
+from backend.infrastructure.persistence.models import Post, User
 
 
 def test_user_created_at_uses_default_factory():

@@ -1,40 +1,44 @@
+---
 name: Backend CI
 
-on:
+'on':
   push:
     paths:
       - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
   pull_request:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
 
     steps:
       - uses: actions/checkout@v5
-
-      - name: Move into backend dir
-        run: cd backend
 
       - name: "Set up Python"
         uses: actions/setup-python@v6
         with:
           python-version-file: "backend/pyproject.toml"
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-
       - name: Lint with ruff
         uses: astral-sh/ruff-action@v3
         with:
           version: "latest"
           github-token: ${{ secrets.CUSTOM_GITHUB_TOKEN }}
+          src: "./backend"
 
       - name: Check formatting with ruff
         run: ruff format --diff .
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
 
       - name: Type check with mypy
         run: uv sync && uv run mypy .
