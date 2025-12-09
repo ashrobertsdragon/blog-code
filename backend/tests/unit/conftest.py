@@ -2,7 +2,7 @@
 
 import pytest
 
-from config import DBSettings, ProductionDBSettings
+from backend.config import DBSettings, ProductionDBSettings
 
 
 @pytest.fixture

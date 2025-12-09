@@ -2,7 +2,7 @@
 
 import pytest
 
-from config import DevDBSettings
+from backend.config import DevDBSettings, TestDBSettings
 
 
 @pytest.fixture
@@ -38,3 +38,19 @@ def dev_env(clean_env):
 def dev_settings(dev_env) -> DevDBSettings:
     """Fixture to initialize DevDBSettings class."""
     return DevDBSettings()
+
+
+@pytest.fixture
+def test_env(clean_env):
+    """Fixture to initialize DevDBSettings environment variables."""
+    clean_env.setenv("FLASK_ENV", "TESTING")
+    clean_env.setenv("LOCAL_DB_NAME", "test_db")
+    clean_env.setenv("LOCAL_DB_USER", "test_user")
+    clean_env.setenv("LOCAL_DB_PASSWORD", "test_password")
+    return clean_env
+
+
+@pytest.fixture
+def test_settings(test_env) -> TestDBSettings:
+    """Fixture to initialize DevDBSettings class."""
+    return TestDBSettings()

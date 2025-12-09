@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy.engine import Engine
 from sqlmodel import Session
 
-from infrastructure.persistence.database import get_db, get_engine
+from backend.infrastructure.persistence.database import get_db, get_engine
 
 
 @pytest.fixture
