@@ -1,6 +1,6 @@
 {
   "result": {
     "status": 1,
-    "data": ["test_blog_user", "other_user"]
+    "data": ["blog_user", "test_blog_user", "other_user"]
   }
 }

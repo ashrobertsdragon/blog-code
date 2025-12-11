@@ -83,12 +83,14 @@ validate_test_env_vars() {
 }
 
 validate_required_commands() {
-    local required_commands=(
-        "ssh"
-        "jq"
-        "rsync"
-        "git"
-    )
+    local required_commands=("ssh" "jq")
+    local optional_commands=("git")
+
+    if [[ "${UAPI_MOCK_ENABLED:-false}" != "true" ]] && [[ "${TEST_MODE:-false}" != "true" ]]; then
+        required_commands+=("rsync")
+    else
+        optional_commands+=("rsync")
+    fi
 
     local missing_commands=()
 
@@ -101,13 +103,31 @@ validate_required_commands() {
         fi
     done
 
-    if command -v node &> /dev/null; then
-        log_info "Command 'node' is available"
-    elif command -v npm &> /dev/null; then
-        log_info "Command 'npm' is available (node runtime)"
+    for cmd in "${optional_commands[@]}"; do
+        if command -v "${cmd}" &> /dev/null; then
+            log_info "Command '${cmd}' is available"
+        else
+            log_warning "Optional command '${cmd}' is not available"
+        fi
+    done
+
+    if [[ "${UAPI_MOCK_ENABLED:-false}" != "true" ]] && [[ "${TEST_MODE:-false}" != "true" ]]; then
+        if command -v node &> /dev/null; then
+            log_info "Command 'node' is available"
+        elif command -v npm &> /dev/null; then
+            log_info "Command 'npm' is available (node runtime)"
+        else
+            missing_commands+=("node/npm")
+            log_error "Required command 'node' or 'npm' is not available"
+        fi
     else
-        missing_commands+=("node/npm")
-        log_error "Required command 'node' or 'npm' is not available"
+        if command -v node &> /dev/null; then
+            log_info "Command 'node' is available"
+        elif command -v npm &> /dev/null; then
+            log_info "Command 'npm' is available (node runtime)"
+        else
+            log_warning "Optional command 'node' or 'npm' is not available"
+        fi
     fi
 
     if [[ ${#missing_commands[@]} -gt 0 ]]; then

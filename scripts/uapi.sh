@@ -32,20 +32,20 @@ _uapi_call() {
             return 1
         fi
 
-        local fixture_path
-        if [[ -n "${FIXTURES_DIR:-}" ]]; then
+        local fixture_path=""
+        if [[ -n "${FIXTURES_DIR:-}" ]] && [[ -f "${FIXTURES_DIR}/${fixture_file}" ]]; then
             fixture_path="${FIXTURES_DIR}/${fixture_file}"
-        else
+        elif [[ -f "tests/fixtures/${fixture_file}" ]]; then
+            fixture_path="tests/fixtures/${fixture_file}"
+        elif [[ -f "${fixture_file}" ]]; then
             fixture_path="${fixture_file}"
-        fi
-
-        if [[ -f "${fixture_path}" ]]; then
-            cat "${fixture_path}"
-            return 0
         else
-            log_error "Mock fixture file not found: ${fixture_path}" >&2
+            log_error "Mock fixture not found: ${fixture_file}" >&2
             return 1
         fi
+
+        cat "${fixture_path}"
+        return 0
     fi
 
     log_debug "SSH connecting to ${CPANEL_USERNAME}@${SERVER_IP_ADDRESS}:${SSH_PORT}" >&2
