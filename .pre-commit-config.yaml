@@ -1,4 +1,3 @@
-
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -27,6 +26,7 @@ repos:
         fail_fast: true
       - id: detect-private-key
         fail_fast: true
+        exclude: ^tests/
       - id: end-of-file-fixer
       - id: fix-byte-order-marker
       - id: mixed-line-ending

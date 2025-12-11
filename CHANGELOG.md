@@ -9,7 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Deployment**: Implemented main deployment orchestrator script `scripts/deploy.sh`
+
+  - Coordinates all 6 deployment functions in correct order
+  - Validates environment variables, required commands, and SSH key before deployment
+  - Sources all helper scripts (logger.sh, uapi.sh, validators.sh) and deployment functions
+  - Supports `--dry-run` flag for testing without making changes
+  - Supports `--help` flag with comprehensive usage documentation
+  - Implements error trap with cleanup function for graceful failure handling
+  - Uses `DEPLOY_SCRIPT_DIR` to avoid variable name conflicts with sourced scripts
+  - Deployment flow: validation → database provisioning → code upload → venv setup → schema initialization → Passenger registration → verification
+  - All logging respects DRY_RUN mode with "[DRY-RUN]" prefix
+  - Idempotent design allows safe re-runs
+  - Exit code handling: 0 for success, non-zero for failures
+  - Ready for Stage 9 integration testing
+
+- **Testing Infrastructure**: Set up BATS testing framework for bash deployment scripts
+
+  - Installed bats-core, bats-support, and bats-assert locally in tests/libs/
+  - Created test directory structure: tests/{fixtures,helpers,libs}/
+  - Implemented test helper utilities in tests/helpers/test_helpers.bash
+  - Added mock fixtures for SSH and UAPI responses
+  - Created test runner script scripts/run_tests.sh
+  - Implemented smoke test suite with 9 passing tests
+  - Test helpers include: environment setup/teardown, SSH/UAPI mocking, temp directory management, file/directory assertions, fixture loading
+  - All tests passing and infrastructure ready for deployment script testing
+
 - **Backend**: Implemented Passenger WSGI entry point in `src/passenger_wsgi.py`
+
   - Created WSGI-compliant entry point for Phusion Passenger deployment
   - Implemented virtual environment bootstrap logic with configurable VIRTUAL_ENV environment variable
   - Imported Flask application via `create_app()` factory pattern
@@ -18,22 +45,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cross-platform compatibility (Windows development, Linux production)
   - PEP 3333 WSGI specification compliance
   - Test suite: 9 integration tests covering WSGI interface, variable naming, type verification, request handling, and virtual environment loading, 5 unit tests covering all functions.
+
 - **Backend**: Fixed build directory path in main.py to match Vite output
+
   - Changed from frontend/dist to build/ to match vite.config.ts outDir
   - Vite outputs to ../build from frontend directory (monorepo/build/)
   - Updated unit tests to expect build/ instead of frontend/dist
   - Updated tests to use Path(**file**).parents[3] instead of repeated .parent
+
 - **CI**: Fixed backend CI workflow to create minimal frontend build structure
+
   - Creates build/ directory with build/static/js/ subdirectory
   - Creates build/index.html with minimal HTML for SPA routing tests
   - Creates dummy JS file for static file serving tests
   - Allows SPA routing tests to pass without full frontend build
   - Backend tests can verify SPA route handling independently
+
 - **Config**: Removed ty.toml from monorepo
+
 - **CI**: Added workflow_dispatch and workflow file path triggers to both CI workflows
+
   - Backend and frontend CI now trigger on workflow file changes
   - Added manual trigger capability via workflow_dispatch
+
 - **Backend**: Implemented Flask application factory pattern in `main.py`
+
   - Created `create_app()` factory function with environment-based configuration
   - Configured Flask with static_folder='dist/static' and template_folder='dist' for React SPA serving
   - Registered health check blueprint with no URL prefix
@@ -45,8 +81,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Development tolerance: logs warning if build directory missing in development
   - Comprehensive test suite: 12 unit tests + 18 integration tests (100% coverage for main.py)
   - Security tests: 5 tests covering path traversal attack vectors (direct, middle, URL-encoded, backslash, exception handling)
+
 - **Frontend**: Implemented `App.tsx` root component with BrowserRouter routing for Home and NotFound pages.
+
 - **Frontend**: Implemented `main.tsx` Vite entry point using React 18 createRoot API with StrictMode wrapper.
+
 - **Frontend**: Added root element creation to test setup for proper DOM initialization in tests.
 
 ### Changed

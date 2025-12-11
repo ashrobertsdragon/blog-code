@@ -1,0 +1,8 @@
+{
+  "result": {
+    "status": 0,
+    "errors": ["The system has already created the database \"cpuser_blogdb\"."],
+    "data": null,
+    "metadata": {}
+  }
+}

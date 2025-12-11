@@ -1,0 +1,8 @@
+{
+  "result": {
+    "status": 1,
+    "data": {
+      "database": "blog_db"
+    }
+  }
+}

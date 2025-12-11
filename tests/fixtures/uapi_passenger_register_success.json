@@ -1,0 +1,11 @@
+{
+  "result": {
+    "status": 1,
+    "errors": null,
+    "data": {
+      "app_id": "app_67890",
+      "startup_file": "passenger_wsgi.py"
+    },
+    "metadata": {}
+  }
+}

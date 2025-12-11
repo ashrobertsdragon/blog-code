@@ -1,0 +1,2 @@
+Connection failed
+Exit code: 255

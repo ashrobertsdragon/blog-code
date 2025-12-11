@@ -1,0 +1,17 @@
+{
+  "result": {
+    "status": 1,
+    "errors": null,
+    "data": [
+      {
+        "disk_usage": "102400",
+        "database": "cpuser_blogdb"
+      },
+      {
+        "disk_usage": "51200",
+        "database": "cpuser_testdb"
+      }
+    ],
+    "metadata": {}
+  }
+}

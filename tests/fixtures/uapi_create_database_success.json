@@ -1,0 +1,10 @@
+{
+  "result": {
+    "status": 1,
+    "errors": null,
+    "data": {
+      "database": "cpuser_blogdb"
+    },
+    "metadata": {}
+  }
+}

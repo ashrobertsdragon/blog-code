@@ -1,0 +1,17 @@
+{
+  "result": {
+    "status": 1,
+    "data": [
+      {
+        "domain": "ashlynantrobus.dev",
+        "base_uri": "/",
+        "app_root": "/home/user/blog"
+      },
+      {
+        "domain": "other.com",
+        "base_uri": "/app",
+        "app_root": "/home/user/other"
+      }
+    ]
+  }
+}

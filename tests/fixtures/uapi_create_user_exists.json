@@ -1,0 +1,8 @@
+{
+  "result": {
+    "status": 0,
+    "errors": ["The user \"cpuser_dbuser\" already exists."],
+    "data": null,
+    "metadata": {}
+  }
+}

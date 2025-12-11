@@ -1,0 +1,6 @@
+libs/bats-core/
+libs/bats-support/
+libs/bats-assert/
+*.tmp
+*.log
+test-results/

@@ -1,0 +1,16 @@
+{
+  "result": {
+    "status": 1,
+    "errors": null,
+    "data": [
+      {
+        "app_id": "app_12345",
+        "domain": "blog.example.com",
+        "app_uri": "/",
+        "base_uri": "/",
+        "enabled": 1
+      }
+    ],
+    "metadata": {}
+  }
+}
