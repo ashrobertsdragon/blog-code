@@ -109,7 +109,7 @@ uapi_db_exists() {
     log_debug "Checking if database ${db_name} exists"
 
     local response
-    if ! response=$(_uapi_call "Mysql" "list_databases"); then
+    if ! response=$(_uapi_call "Postgresql" "list_databases"); then
         return 1
     fi
 
@@ -140,7 +140,7 @@ uapi_db_user_exists() {
     log_debug "Checking if database user ${user_name} exists"
 
     local response
-    if ! response=$(_uapi_call "Mysql" "list_users"); then
+    if ! response=$(_uapi_call "Postgresql" "list_users"); then
         return 1
     fi
 
@@ -242,7 +242,7 @@ uapi_create_database() {
     log_info "Creating database ${db_name}"
 
     local response
-    if ! response=$(_uapi_call "Mysql" "create_database" "name=${db_name}"); then
+    if ! response=$(_uapi_call "Postgresql" "create_database" "name=${db_name}"); then
         return 1
     fi
 
@@ -291,7 +291,7 @@ uapi_create_db_user() {
     log_info "Creating database user ${user_name}"
 
     local response
-    if ! response=$(_uapi_call "Mysql" "create_user" "name=${user_name}" "password=***"); then
+    if ! response=$(_uapi_call "Postgresql" "create_user" "name=${user_name}" "password=***"); then
         return 1
     fi
 
@@ -335,7 +335,7 @@ uapi_grant_privileges() {
     log_info "Granting privileges on ${db_name} to ${user_name}"
 
     local response
-    if ! response=$(_uapi_call "Mysql" "set_privileges_on_database" \
+    if ! response=$(_uapi_call "Postgresql" "set_privileges_on_database" \
         "user=${user_name}" "database=${db_name}" "privileges=ALL PRIVILEGES"); then
         return 1
     fi
