@@ -9,6 +9,7 @@ import os
 from unittest.mock import patch
 
 import pytest
+from flask import Flask
 from flask.testing import FlaskClient
 
 
@@ -37,7 +38,8 @@ def mock_interpreter_path() -> str:
 
 @pytest.fixture
 def flask_test_client(passenger_wsgi) -> FlaskClient:
-    return passenger_wsgi.application.test_client()
+    app: Flask = passenger_wsgi.application
+    return app.test_client()
 
 
 def test_application_variable_exists(passenger_wsgi):
