@@ -11,7 +11,14 @@ from unittest.mock import patch
 import pytest
 from flask.testing import FlaskClient
 
-import passenger_wsgi
+
+@pytest.fixture
+def passenger_wsgi(monkeypatch):
+    """Fixture to import and return passenger_wsgi module."""
+    monkeypatch.setenv("FLASK_ENV", "TESTING")
+    import passenger_wsgi
+
+    return passenger_wsgi
 
 
 @pytest.fixture
@@ -29,11 +36,11 @@ def mock_interpreter_path() -> str:
 
 
 @pytest.fixture
-def flask_test_client() -> FlaskClient:
+def flask_test_client(passenger_wsgi) -> FlaskClient:
     return passenger_wsgi.application.test_client()
 
 
-def test_application_variable_exists():
+def test_application_variable_exists(passenger_wsgi):
     """passenger_wsgi module must expose 'application' variable for WSGI spec.
 
     WSGI servers like Passenger look for a module-level variable named
@@ -45,7 +52,7 @@ def test_application_variable_exists():
         )
 
 
-def test_application_is_flask_app():
+def test_application_is_flask_app(passenger_wsgi):
     """application variable must be a Flask instance."""
     from flask import Flask
 
@@ -55,7 +62,7 @@ def test_application_is_flask_app():
         )
 
 
-def test_application_is_callable():
+def test_application_is_callable(passenger_wsgi):
     """application must be callable to satisfy WSGI spec.
 
     WSGI spec requires application to be a callable that accepts
@@ -102,7 +109,7 @@ def test_health_endpoint_via_wsgi(flask_test_client):
 
 
 def test_ensure_virtualenv_loads_correct_python_env(
-    mock_virtualenv, mock_interpreter_path
+    mock_virtualenv, mock_interpreter_path, passenger_wsgi
 ):
     """ensure_virtualenv should pass the correct interpreter to os.execl()."""
     with (
@@ -115,7 +122,9 @@ def test_ensure_virtualenv_loads_correct_python_env(
         assert mock_execl.call_args[0][0] == mock_interpreter_path
 
 
-def test_ensure_virtualenv_raises_value_error_with_no_path(monkeypatch):
+def test_ensure_virtualenv_raises_value_error_with_no_path(
+    monkeypatch, passenger_wsgi
+):
     """ensure_virtualenv should raise a ValueError when no path is set."""
     monkeypatch.delenv("VENV_PATH", raising=False)
     with pytest.raises(ValueError) as exec_info:
@@ -123,7 +132,7 @@ def test_ensure_virtualenv_raises_value_error_with_no_path(monkeypatch):
     assert str(exec_info.value) == "Virtual Environment path must be set"
 
 
-def test_ensure_virtualenv_uses_envvar(monkeypatch):
+def test_ensure_virtualenv_uses_envvar(monkeypatch, passenger_wsgi):
     """ensure_virtualenv should use environment value as fallback."""
     monkeypatch.setenv("VENV_PATH", "test_path")
     with (
@@ -139,7 +148,7 @@ def test_ensure_virtualenv_uses_envvar(monkeypatch):
 
 
 def test_ensure_virtualenv_uses_arg_over_envvar(
-    mock_virtualenv, mock_interpreter_path, monkeypatch
+    mock_virtualenv, mock_interpreter_path, monkeypatch, passenger_wsgi
 ):
     """ensure_virtualenv should use argument value over environment value."""
     monkeypatch.setenv("VENV_PATH", "test_path")
