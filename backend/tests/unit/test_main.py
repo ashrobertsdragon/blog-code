@@ -16,6 +16,11 @@ from flask import Flask
 from backend.main import create_app
 
 
+@pytest.fixture(autouse=True)
+def set_flask_env(monkeypatch):
+    monkeypatch.setenv("FLASK_ENV", "TESTING")
+
+
 def test_create_app_returns_flask_instance():
     """create_app() should return a Flask application instance."""
 
