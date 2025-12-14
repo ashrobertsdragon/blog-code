@@ -1,6 +1,6 @@
 """Integration tests for Passenger WSGI entry point.
 
-Tests WSGI interface compliance for passenger_wsgi.py module.
+Tests WSGI interface compliance for patched_passenger_wsgi.py module.
 This module must expose an 'application' variable that is a WSGI-compliant
 Flask application instance.
 """
@@ -14,8 +14,8 @@ from flask.testing import FlaskClient
 
 
 @pytest.fixture
-def passenger_wsgi(monkeypatch):
-    """Fixture to import and return passenger_wsgi module."""
+def patched_passenger_wsgi(monkeypatch):
+    """Fixture to import and return patched_passenger_wsgi module."""
     monkeypatch.setenv("FLASK_ENV", "TESTING")
     import passenger_wsgi
 
@@ -37,41 +37,40 @@ def mock_interpreter_path() -> str:
 
 
 @pytest.fixture
-def flask_test_client(passenger_wsgi) -> FlaskClient:
-    app: Flask = passenger_wsgi.application
+def flask_test_client(patched_passenger_wsgi) -> FlaskClient:
+    app: Flask = patched_passenger_wsgi.application
     return app.test_client()
 
 
-def test_application_variable_exists(passenger_wsgi):
-    """passenger_wsgi module must expose 'application' variable for WSGI spec.
+def test_application_variable_exists(patched_passenger_wsgi):
+    """patched_passenger_wsgi module must expose 'application' variable.
 
-    WSGI servers like Passenger look for a module-level variable named
-    'application', not 'app'. This is a WSGI specification requirement.
+    Passenger looks for module-level variable named 'application', not 'app'.
     """
     with patch("os.execl"):
-        assert hasattr(passenger_wsgi, "application"), (
-            "passenger_wsgi module must expose 'application' variable"
+        assert hasattr(patched_passenger_wsgi, "application"), (
+            "patched_passenger_wsgi module must expose 'application' variable"
         )
 
 
-def test_application_is_flask_app(passenger_wsgi):
+def test_application_is_flask_app(patched_passenger_wsgi):
     """application variable must be a Flask instance."""
     from flask import Flask
 
     with patch("os.execl"):
-        assert isinstance(passenger_wsgi.application, Flask), (
+        assert isinstance(patched_passenger_wsgi.application, Flask), (
             "application must be a Flask instance"
         )
 
 
-def test_application_is_callable(passenger_wsgi):
+def test_application_is_callable(patched_passenger_wsgi):
     """application must be callable to satisfy WSGI spec.
 
     WSGI spec requires application to be a callable that accepts
     environ and start_response parameters.
     """
     with patch("os.execl"):
-        assert callable(passenger_wsgi.application), (
+        assert callable(patched_passenger_wsgi.application), (
             "application must be callable per WSGI spec"
         )
 
@@ -111,7 +110,7 @@ def test_health_endpoint_via_wsgi(flask_test_client):
 
 
 def test_ensure_virtualenv_loads_correct_python_env(
-    passenger_wsgi, mock_virtualenv, mock_interpreter_path
+    patched_passenger_wsgi, mock_virtualenv, mock_interpreter_path
 ):
     """ensure_virtualenv should pass the correct interpreter to os.execl()."""
     with (
@@ -120,21 +119,21 @@ def test_ensure_virtualenv_loads_correct_python_env(
         patch("sys.executable", "/usr/bin/python3"),
         patch("sys.platform", "linux"),
     ):
-        passenger_wsgi.ensure_virtualenv(mock_virtualenv)
+        patched_passenger_wsgi.ensure_virtualenv(mock_virtualenv)
         assert mock_execl.call_args[0][0] == mock_interpreter_path
 
 
 def test_ensure_virtualenv_raises_value_error_with_no_path(
-    passenger_wsgi, monkeypatch
+    patched_passenger_wsgi, monkeypatch
 ):
     """ensure_virtualenv should raise a ValueError when no path is set."""
     monkeypatch.delenv("VENV_PATH", raising=False)
     with pytest.raises(ValueError) as exec_info:
-        passenger_wsgi.ensure_virtualenv()
+        patched_passenger_wsgi.ensure_virtualenv()
     assert str(exec_info.value) == "Virtual Environment path must be set"
 
 
-def test_ensure_virtualenv_uses_envvar(passenger_wsgi, monkeypatch):
+def test_ensure_virtualenv_uses_envvar(patched_passenger_wsgi, monkeypatch):
     """ensure_virtualenv should use environment value as fallback."""
     monkeypatch.setenv("VENV_PATH", "test_path")
     with (
@@ -143,14 +142,14 @@ def test_ensure_virtualenv_uses_envvar(passenger_wsgi, monkeypatch):
         patch("sys.executable", "/usr/bin/python3"),
         patch("sys.platform", "linux"),
     ):
-        passenger_wsgi.ensure_virtualenv()
+        patched_passenger_wsgi.ensure_virtualenv()
         assert mock_execl.call_args[0][0] == os.path.join(
             "test_path", "bin", "python3"
         )
 
 
 def test_ensure_virtualenv_uses_arg_over_envvar(
-    passenger_wsgi, mock_virtualenv, mock_interpreter_path, monkeypatch
+    patched_passenger_wsgi, mock_virtualenv, mock_interpreter_path, monkeypatch
 ):
     """ensure_virtualenv should use argument value over environment value."""
     monkeypatch.setenv("VENV_PATH", "test_path")
@@ -160,5 +159,5 @@ def test_ensure_virtualenv_uses_arg_over_envvar(
         patch("sys.executable", "/usr/bin/python3"),
         patch("sys.platform", "linux"),
     ):
-        passenger_wsgi.ensure_virtualenv(mock_virtualenv)
+        patched_passenger_wsgi.ensure_virtualenv(mock_virtualenv)
         assert mock_execl.call_args[0][0] == mock_interpreter_path

@@ -29,10 +29,13 @@ def test_ensure_virtualenv_raises_without_path(ensure_virtualenv, monkeypatch):
         ensure_virtualenv()
 
 
-@pytest.mark.parametrize("flask_env", ["development", "production"])
+@pytest.mark.parametrize("flask_env", ["development", "production", None])
 def test_passenger_wsgi_raises_value_error(flask_env, monkeypatch):
     """passenger_wsgi should raise ValueError when flask_env not 'testing'."""
-    monkeypatch.setenv("FLASK_ENV", flask_env)
+    if flask_env is not None:
+        monkeypatch.setenv("FLASK_ENV", flask_env)
+    else:
+        monkeypatch.delenv("FLASK_ENV", raising=False)
     monkeypatch.delenv("VENV_PATH", raising=False)
 
     if "passenger_wsgi" in sys.modules:
@@ -42,6 +45,19 @@ def test_passenger_wsgi_raises_value_error(flask_env, monkeypatch):
         ValueError, match="Virtual Environment path must be set"
     ):
         import passenger_wsgi  # noqa: F401
+
+
+def test_passenger_wsgi_testing_does_not_exec(monkeypatch):
+    """passenger_wsgi should not call os.execl when FLASK_ENV is TESTING."""
+    monkeypatch.setenv("FLASK_ENV", "TESTING")
+    monkeypatch.delenv("VENV_PATH", raising=False)
+
+    if "passenger_wsgi" in sys.modules:
+        del sys.modules["passenger_wsgi"]
+    with patch("os.execl") as mock_execl:
+        import passenger_wsgi  # noqa: F401
+
+        mock_execl.assert_not_called()
 
 
 def test_ensure_virtualenv_unix_path(
