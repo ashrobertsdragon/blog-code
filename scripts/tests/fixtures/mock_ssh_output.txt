@@ -1,0 +1,115 @@
+# Mock SSH Command Outputs
+
+## Directory Creation Success
+Created directory: /home/cpaneluser/blog-app/backend
+Created directory: /home/cpaneluser/blog-app/backend/logs
+Created directory: /home/cpaneluser/blog-app/drafts
+
+## Directory Listing
+/home/cpaneluser/blog-app
+/home/cpaneluser/blog-app/backend
+/home/cpaneluser/blog-app/backend/logs
+/home/cpaneluser/blog-app/backend/passenger_wsgi.py
+/home/cpaneluser/blog-app/backend/src
+/home/cpaneluser/blog-app/drafts
+
+## File Permissions Check
+-rw-r--r-- 1 cpaneluser cpaneluser 1234 Dec 14 12:00 passenger_wsgi.py
+drwxr-xr-x 2 cpaneluser cpaneluser 4096 Dec 14 12:00 backend
+drwxr-xr-x 2 cpaneluser cpaneluser 4096 Dec 14 12:00 drafts
+
+## Environment Variable Verification
+CPANEL_POSTGRES_USER=cpaneluser_pguser
+CPANEL_POSTGRES_PASSWORD=***REDACTED***
+GITHUB_PERSONAL_ACCESS_TOKEN=***REDACTED***
+RESEND_API_KEY=***REDACTED***
+CLERK_PUBLISHABLE_KEY=pk_test_123456789
+CLERK_SECRET_KEY=***REDACTED***
+
+## Python Version Check
+Python 3.13.1
+
+## Pip List (uv environment)
+Package    Version
+---------- -------
+Flask      3.1.0
+SQLModel   0.0.24
+psycopg2   2.9.10
+pytest     8.3.4
+
+## Service Restart Success
+Restarting Passenger application...
+Application restarted successfully
+
+## Service Restart Failure
+Restarting Passenger application...
+Error: Application failed to start
+Check logs at /home/cpaneluser/logs/passenger.log
+
+## Cron Job Creation Success
+Cron job created: * * * * * cd /home/cpaneluser/blog-app/backend && uv run scripts/process_notifications.py
+
+## Cron Job Listing
+* * * * * cd /home/cpaneluser/blog-app/backend && uv run scripts/process_notifications.py
+*/5 * * * * cd /home/cpaneluser/blog-app/backend && uv run scripts/sync_repo_changes.py
+0 3 * * 0 cd /home/cpaneluser/blog-app/backend && uv run scripts/cleanup_revisions.py
+
+## SSH Connection Test Success
+SSH connection successful to cpaneluser@192.0.2.1:22
+
+## SSH Connection Test Failure
+ssh: connect to host 192.0.2.1 port 22: Connection refused
+
+## File Upload Verification
+Uploaded: passenger_wsgi.py (1234 bytes)
+Uploaded: backend/main.py (5678 bytes)
+Uploaded: backend/config.py (2345 bytes)
+Total files: 156
+Total size: 2.3 MB
+
+## Database Connection Test Success
+PostgreSQL connection successful
+Database: cpaneluser_blogdb
+User: cpaneluser_pguser
+Host: localhost
+Port: 5432
+
+## Database Connection Test Failure
+FATAL: password authentication failed for user "cpaneluser_pguser"
+FATAL: database "cpaneluser_blogdb" does not exist
+
+## Passenger Status
+Passenger version: 6.0.20
+Status: running
+Processes: 4
+Memory usage: 256 MB
+Uptime: 2 days 14 hours
+
+## Log Tail (Application Startup)
+[2025-12-14 12:00:00] INFO: Starting Flask application
+[2025-12-14 12:00:01] INFO: Connected to PostgreSQL database
+[2025-12-14 12:00:02] INFO: GitHub sync service initialized
+[2025-12-14 12:00:03] INFO: Application ready to accept requests
+
+## Log Tail (Error)
+[2025-12-14 12:00:00] ERROR: Failed to connect to database
+[2025-12-14 12:00:00] ERROR: psycopg2.OperationalError: FATAL: password authentication failed
+[2025-12-14 12:00:00] ERROR: Application startup failed
+
+## Disk Usage
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1       100G   45G   55G  45% /
+/dev/sda2       500G  120G  380G  24% /home
+
+## Process List
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+cpanel   12345  0.5  2.1 456789 123456 ?      Sl   12:00   0:15 Passenger RackApp
+cpanel   12346  0.2  1.5 345678  98765 ?      Sl   12:00   0:08 Python Flask app
+
+## Empty Output (Successful Silent Command)
+
+## Permission Denied Error
+bash: /home/cpaneluser/restricted-dir: Permission denied
+
+## Disk Full Error
+write error: No space left on device

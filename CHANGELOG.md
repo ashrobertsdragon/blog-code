@@ -9,7 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Deployment**: Automated deployment script for cPanel hosting
+
+  - End-to-end deployment automation to cPanel shared hosting environment
+  - Idempotent database provisioning (PostgreSQL database, user, and privileges)
+  - Automated code upload via rsync with checksum verification
+  - Remote Python virtual environment setup and dependency installation
+  - Database schema creation from SQLModel models
+  - Passenger WSGI application registration with environment variable injection
+  - Health check verification across all critical endpoints
+  - Comprehensive error handling with exponential backoff retry logic
+  - Cross-platform SSH key handling (Windows Git Bash and Linux compatibility)
+  - Security features: input sanitization, secret suppression, audit logging
+  - Production deployment confirmation prompt for safety
+  - BATS test suite with 30+ tests covering validation, provisioning, error handling, and idempotency
+  - Detailed deployment documentation with prerequisites and usage examples
+
 - **Backend**: Implemented Passenger WSGI entry point in `src/passenger_wsgi.py`
+
   - Created WSGI-compliant entry point for Phusion Passenger deployment
   - Implemented virtual environment bootstrap logic with configurable VIRTUAL_ENV environment variable
   - Imported Flask application via `create_app()` factory pattern
@@ -18,22 +35,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cross-platform compatibility (Windows development, Linux production)
   - PEP 3333 WSGI specification compliance
   - Test suite: 9 integration tests covering WSGI interface, variable naming, type verification, request handling, and virtual environment loading, 5 unit tests covering all functions.
+
 - **Backend**: Fixed build directory path in main.py to match Vite output
+
   - Changed from frontend/dist to build/ to match vite.config.ts outDir
   - Vite outputs to ../build from frontend directory (monorepo/build/)
   - Updated unit tests to expect build/ instead of frontend/dist
   - Updated tests to use Path(**file**).parents[3] instead of repeated .parent
+
 - **CI**: Fixed backend CI workflow to create minimal frontend build structure
+
   - Creates build/ directory with build/static/js/ subdirectory
   - Creates build/index.html with minimal HTML for SPA routing tests
   - Creates dummy JS file for static file serving tests
   - Allows SPA routing tests to pass without full frontend build
   - Backend tests can verify SPA route handling independently
+
 - **Config**: Removed ty.toml from monorepo
+
 - **CI**: Added workflow_dispatch and workflow file path triggers to both CI workflows
+
   - Backend and frontend CI now trigger on workflow file changes
   - Added manual trigger capability via workflow_dispatch
+
 - **Backend**: Implemented Flask application factory pattern in `main.py`
+
   - Created `create_app()` factory function with environment-based configuration
   - Configured Flask with static_folder='dist/static' and template_folder='dist' for React SPA serving
   - Registered health check blueprint with no URL prefix
@@ -45,8 +71,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Development tolerance: logs warning if build directory missing in development
   - Comprehensive test suite: 12 unit tests + 18 integration tests (100% coverage for main.py)
   - Security tests: 5 tests covering path traversal attack vectors (direct, middle, URL-encoded, backslash, exception handling)
+
 - **Frontend**: Implemented `App.tsx` root component with BrowserRouter routing for Home and NotFound pages.
+
 - **Frontend**: Implemented `main.tsx` Vite entry point using React 18 createRoot API with StrictMode wrapper.
+
 - **Frontend**: Added root element creation to test setup for proper DOM initialization in tests.
 
 ### Changed
