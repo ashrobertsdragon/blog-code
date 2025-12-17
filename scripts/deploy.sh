@@ -8,12 +8,20 @@ SECURITY FEATURES:
 - Signal traps to unset secrets on EXIT/INT/TERM
 - Input sanitization for environment variables
 - SSH key permission validation with TOCTOU mitigation
-- requirements.txt validation to prevent embedded credentials
 - Secret suppression in UAPI calls (redirected to /dev/null)
-- Secure temporary file creation with automatic cleanup
-- SSH options as arrays to prevent injection
+- SSH command construction with proper quoting to prevent injection
 - Audit logging to syslog for all security-relevant operations
 - Production deployment confirmation prompt
+
+DEPLOYMENT PROCESS:
+- Validates environment variables and SSH key permissions
+- Provisions PostgreSQL database, user, and privileges (idempotent)
+- Uploads code via rsync with checksum verification
+- Installs uv on remote server if not present
+- Installs application dependencies with uv sync
+- Creates database schema using uv run scripts/create_schema.py
+- Registers/updates Passenger application with environment variables
+- Verifies deployment via health check endpoints with exponential backoff
 
 KNOWN LIMITATIONS:
 - Database password appears in process arguments during UAPI calls
@@ -53,7 +61,6 @@ readonly PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd -P)"
 readonly DOMAIN="ashlynantrobus.dev"
 readonly APP_NAME="BlogAppProd"
 readonly BASE_URI="/"
-readonly REMOTE_APP_PATH="${REMOTE_APP_PATH:-/home/\${CPANEL_USERNAME}/blog}"
 
 cleanup_secrets() {
   unset CPANEL_POSTGRES_PASSWORD
@@ -116,7 +123,15 @@ uapi_call() {
   local function="$2"
   shift 2
 
-  uapi --output=jsonpretty "$module" "$function" "$@" 2>/dev/null || echo '{"data":[]}'
+  local uapi_output
+  if ! uapi_output=$(uapi --output=jsonpretty "$module" "$function" "$@" 2>/dev/null); then
+    local exit_status=$?
+    logger -t "deploy.sh[uapi_call]" -p user.warning "uapi ${module}::${function} failed with exit status ${exit_status}"
+    printf '%s\n' '{"data":[]}'
+    return "${exit_status}"
+  fi
+
+  printf '%s\n' "${uapi_output}"
 }
 
 uapi_list_contains() {
@@ -188,9 +203,11 @@ setup_ssh_key() {
   if [[ -f "$SSH_PRIVATE_KEY_PATH" ]]; then
     chmod 600 -- "$SSH_PRIVATE_KEY_PATH"
     local actual_perms
-    actual_perms=$(stat -c %a "$SSH_PRIVATE_KEY_PATH" 2>/dev/null || stat -f %Lp "$SSH_PRIVATE_KEY_PATH" 2>/dev/null || echo "600")
-    if [[ "$actual_perms" != "600" ]]; then
-      printf "ERROR: Failed to set restrictive permissions on SSH key\n" >&2
+    actual_perms=$(stat -c %a "$SSH_PRIVATE_KEY_PATH" 2>/dev/null || stat -f %Lp "$SSH_PRIVATE_KEY_PATH" 2>/dev/null)
+
+    if [[ -z "$actual_perms" ]] || [[ "$actual_perms" != "600" ]]; then
+      logger -t "deploy.sh[setup_ssh_key]" -p user.error "Failed to set or verify restrictive permissions (600) on SSH key"
+      printf "ERROR: Failed to set or verify restrictive permissions (600) on SSH key. Please check file ownership and permissions.\n" >&2
       return 1
     fi
   fi
@@ -262,21 +279,6 @@ provision_database() {
 upload_code() {
   local remote_path
   remote_path="$(get_remote_app_path)"
-  local -a ssh_opts=(-i "$SSH_PRIVATE_KEY_PATH" -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new)
-
-  logger -t deploy.sh -p user.info "Exporting Python dependencies"
-  local tmpdir
-  tmpdir=$(mktemp -d)
-  trap "rm -rf -- ${tmpdir@Q}" RETURN
-  local requirements_file="${tmpdir}/requirements.txt"
-  (cd "${PROJECT_ROOT}/monorepo/backend" && uv export --no-hashes --frozen > "$requirements_file")
-
-  if grep -qE 'https://[^/]+:[^@]+@' "$requirements_file"; then
-    printf "ERROR: requirements.txt contains embedded credentials\n" >&2
-    return 1
-  fi
-
-  cp -- "$requirements_file" "${PROJECT_ROOT}/monorepo/backend/requirements.txt"
 
   local backend_src="${PROJECT_ROOT}/monorepo/backend/"
   if [[ ! -d "$backend_src" ]] || [[ -z "$(ls -A "$backend_src" 2>/dev/null || true)" ]]; then
@@ -286,7 +288,7 @@ upload_code() {
 
   logger -t deploy.sh -p user.info "Uploading backend code to ${SERVER_IP_ADDRESS}"
   rsync -avz --perms --checksum --delete \
-    -e "ssh ${ssh_opts[*]}" \
+    -e "ssh -i \"$SSH_PRIVATE_KEY_PATH\" -p \"$SSH_PORT\" -o StrictHostKeyChecking=accept-new" \
     "$backend_src" \
     "${CPANEL_USERNAME}@${SERVER_IP_ADDRESS}:${remote_path}/backend/"
 
@@ -297,7 +299,7 @@ upload_code() {
     else
       logger -t deploy.sh -p user.info "Uploading frontend build to ${SERVER_IP_ADDRESS}"
       rsync -avz --perms --checksum --delete \
-        -e "ssh ${ssh_opts[*]}" \
+        -e "ssh -i \"$SSH_PRIVATE_KEY_PATH\" -p \"$SSH_PORT\" -o StrictHostKeyChecking=accept-new" \
         "$frontend_src" \
         "${CPANEL_USERNAME}@${SERVER_IP_ADDRESS}:${remote_path}/build/"
     fi
@@ -306,27 +308,48 @@ upload_code() {
   return 0
 }
 
-setup_venv() {
-  logger -t deploy.sh -p user.info "Setting up Python virtual environment on ${SERVER_IP_ADDRESS}"
+ensure_uv_installed() {
+  logger -t deploy.sh -p user.info "Checking for uv installation on ${SERVER_IP_ADDRESS}"
   run_remote_command "${SERVER_IP_ADDRESS}" bash <<'REMOTE_SCRIPT'
 set -Eeuo pipefail
+
+if command -v uv &>/dev/null; then
+  echo "✓ uv is already installed"
+  uv --version
+else
+  echo "Installing uv..."
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  export PATH="$HOME/.cargo/bin:$PATH"
+
+  if ! command -v uv &>/dev/null; then
+    echo "ERROR: Failed to install uv" >&2
+    exit 1
+  fi
+
+  echo "✓ uv installed successfully"
+  uv --version
+fi
+REMOTE_SCRIPT
+
+  return 0
+}
+
+install_application() {
+  logger -t deploy.sh -p user.info "Installing application with uv on ${SERVER_IP_ADDRESS}"
+  run_remote_command "${SERVER_IP_ADDRESS}" bash <<'REMOTE_SCRIPT'
+set -Eeuo pipefail
+
+export PATH="$HOME/.cargo/bin:$PATH"
 
 echo "Checking Python version..."
 python3 --version
 
-echo "Setting up virtual environment..."
-if [[ ! -d ~/blog/venv ]]; then
-  echo "Creating new virtual environment"
-  python3 -m venv ~/blog/venv
-else
-  echo "Virtual environment already exists"
-fi
+echo "Installing application dependencies with uv..."
+cd ~/blog/backend
 
-echo "Activating virtual environment..."
-source ~/blog/venv/bin/activate
+uv sync --frozen
 
-echo "Installing dependencies from requirements.txt..."
-pip install -r ~/blog/backend/requirements.txt
+echo "✓ Application dependencies installed"
 REMOTE_SCRIPT
 
   return 0
@@ -334,20 +357,15 @@ REMOTE_SCRIPT
 
 run_schema() {
   logger -t deploy.sh -p user.info "Creating database schema on ${SERVER_IP_ADDRESS}"
-  run_remote_command "${SERVER_IP_ADDRESS}" bash <<REMOTE_SCRIPT
+  run_remote_command "${SERVER_IP_ADDRESS}" bash <<'REMOTE_SCRIPT'
 set -Eeuo pipefail
 
-echo "Activating virtual environment for schema creation..."
-source ~/blog/venv/bin/activate
+export PATH="$HOME/.cargo/bin:$PATH"
+
+cd ~/blog/backend
 
 echo "Creating database schema..."
-python -c "
-from backend.infrastructure.persistence.database import engine
-from backend.infrastructure.persistence.models import SQLModel
-
-SQLModel.metadata.create_all(engine)
-print('Schema creation completed')
-"
+uv run scripts/create_schema.py
 REMOTE_SCRIPT
 
   return 0
@@ -448,8 +466,11 @@ main() {
   upload_code
   printf "✓ Code uploaded\n"
 
-  setup_venv
-  printf "✓ Virtual environment configured\n"
+  ensure_uv_installed
+  printf "✓ uv installation verified\n"
+
+  install_application
+  printf "✓ Application installed\n"
 
   run_schema
   printf "✓ Database schema created\n"

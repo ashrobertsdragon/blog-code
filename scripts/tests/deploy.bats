@@ -317,10 +317,53 @@ teardown() {
 }
 
 # ============================================================================
-# Virtual Environment Tests (4 tests)
+# uv and Application Installation Tests (4 tests)
 # ============================================================================
 
-@test "deployment creates virtualenv on remote server when it does not exist" {
+@test "deployment installs uv on remote server when it does not exist" {
+  export SSH_CALLED="${BATS_TEST_TMPDIR}/ssh_called"
+  setup_mock_successful_database_creation
+  setup_mock_successful_user_creation
+  setup_mock_successful_rsync
+  setup_mock_successful_health_check
+
+  ssh() {
+    touch "${SSH_CALLED}"
+    echo "✓ uv installed successfully"
+    echo "uv 0.5.0"
+    return 0
+  }
+  export -f ssh
+
+  source "${BATS_TEST_DIRNAME}/../deploy.sh"
+  run main
+
+  assert_exit_success "$status"
+  assert_file_exists "${SSH_CALLED}"
+  assert_contains "$output" "uv installation verified"
+}
+
+@test "deployment skips uv installation when it already exists" {
+  setup_mock_successful_database_creation
+  setup_mock_successful_user_creation
+  setup_mock_successful_rsync
+  setup_mock_successful_health_check
+
+  ssh() {
+    echo "✓ uv is already installed"
+    echo "uv 0.5.0"
+    return 0
+  }
+  export -f ssh
+
+  source "${BATS_TEST_DIRNAME}/../deploy.sh"
+  run main
+
+  assert_exit_success "$status"
+  assert_contains "$output" "uv installation verified"
+}
+
+@test "deployment installs application dependencies with uv sync" {
   export SSH_CALLED="${BATS_TEST_TMPDIR}/ssh_called"
   setup_mock_successful_database_creation
   setup_mock_successful_user_creation
@@ -330,6 +373,7 @@ teardown() {
   ssh() {
     touch "${SSH_CALLED}"
     echo "Python 3.13.0"
+    echo "✓ Application dependencies installed"
     return 0
   }
   export -f ssh
@@ -339,47 +383,7 @@ teardown() {
 
   assert_exit_success "$status"
   assert_file_exists "${SSH_CALLED}"
-  assert_contains "$output" "Virtual environment configured"
-}
-
-@test "deployment skips virtualenv creation when it already exists" {
-  setup_mock_successful_database_creation
-  setup_mock_successful_user_creation
-  setup_mock_successful_rsync
-  setup_mock_successful_health_check
-
-  ssh() {
-    echo "virtualenv already exists"
-    return 0
-  }
-  export -f ssh
-
-  source "${BATS_TEST_DIRNAME}/../deploy.sh"
-  run main
-
-  assert_exit_success "$status"
-  assert_contains "$output" "Virtual environment configured"
-}
-
-@test "deployment installs Python dependencies from requirements.txt" {
-  export SSH_CALLED="${BATS_TEST_TMPDIR}/ssh_called"
-  setup_mock_successful_database_creation
-  setup_mock_successful_user_creation
-  setup_mock_successful_rsync
-  setup_mock_successful_health_check
-
-  ssh() {
-    touch "${SSH_CALLED}"
-    return 0
-  }
-  export -f ssh
-
-  source "${BATS_TEST_DIRNAME}/../deploy.sh"
-  run main
-
-  assert_exit_success "$status"
-  assert_file_exists "${SSH_CALLED}"
-  assert_contains "$output" "Virtual environment configured"
+  assert_contains "$output" "Application installed"
 }
 
 @test "deployment verifies Python 3.13+ is available on remote server" {
@@ -401,7 +405,7 @@ teardown() {
 
   assert_exit_success "$status"
   assert_file_exists "${SSH_CALLED}"
-  assert_contains "$output" "Virtual environment configured"
+  assert_contains "$output" "Application installed"
 }
 
 # ============================================================================
