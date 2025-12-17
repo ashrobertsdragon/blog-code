@@ -1,17 +1,17 @@
-# Deployment Scripts
+# Deployment Guide
 
-This directory contains production deployment automation for the blog application to cPanel shared hosting.
+This document describes production deployment automation for the blog application to cPanel shared hosting.
 
 ## Overview
 
-The deployment script (`deploy.sh`) provides end-to-end automation for deploying the blog platform to cPanel hosting with Phusion Passenger. It handles database provisioning, code upload, virtual environment setup, and application registration in a single command.
+The deployment script (`scripts/deploy.sh`) provides end-to-end automation for deploying the blog platform to cPanel hosting with Phusion Passenger. It handles database provisioning, code upload, application installation with uv, and application registration in a single command.
 
 ## Features
 
 - **Idempotent Operations**: Safe to run multiple times - only creates resources that don't exist
 - **Database Provisioning**: Automatic PostgreSQL database, user, and privilege setup
 - **Code Deployment**: Rsync-based upload with checksum verification and deletion of stale files
-- **Virtual Environment Management**: Remote Python venv creation and dependency installation
+- **uv Package Management**: Automatic uv installation and dependency management on remote server
 - **Schema Migration**: Automatic database schema creation from SQLModel models
 - **Application Registration**: Passenger WSGI application configuration with environment variables
 - **Health Verification**: Post-deployment validation of critical endpoints
@@ -28,7 +28,6 @@ The deployment script (`deploy.sh`) provides end-to-end automation for deploying
    - `bash` 4.0+ (included in Git Bash on Windows)
    - `ssh` client (OpenSSH)
    - `rsync` (for Windows: install via Git Bash or WSL)
-   - `uv` Python package manager (for exporting requirements.txt)
 1. **Frontend Build**: Run `npm run build` in `frontend/` directory before deploying
 1. **SSH Access**: SSH private key with access to cPanel server
 
@@ -76,9 +75,9 @@ The script will:
 1. Configure SSH key with correct permissions
 1. Provision PostgreSQL database (idempotent)
 1. Upload backend code and frontend build files via rsync
-1. Create remote Python virtual environment
-1. Install dependencies from requirements.txt
-1. Create database schema from SQLModel models
+1. Ensure uv is installed on remote server
+1. Install application dependencies with `uv sync`
+1. Create database schema using `uv run scripts/create_schema.py`
 1. Register Passenger application with environment variables
 1. Verify deployment via health checks
 
@@ -108,6 +107,7 @@ The deployment script is fully idempotent - safe to run multiple times without s
 - **Privilege Grants**: Only grants privileges if not already granted
 - **Application Registration**: Creates new app or updates existing app configuration
 - **File Upload**: Rsync uses checksums to only transfer changed files
+- **uv Installation**: Only installs uv if not already present
 
 This means you can safely re-run the deployment after failures without manual cleanup.
 
@@ -121,7 +121,8 @@ Starting deployment to ashlynantrobus.dev...
 ✓ SSH key configured
 ✓ Database provisioned
 ✓ Code uploaded
-✓ Virtual environment configured
+✓ uv installation verified
+✓ Application installed
 ✓ Database schema created
 ✓ Passenger application registered
 ✓ Deployment verified
@@ -144,14 +145,15 @@ Network operations (health checks) use exponential backoff retry:
 
 ### Common Errors
 
-| Error                                      | Cause               | Solution                                 |
-| ------------------------------------------ | ------------------- | ---------------------------------------- |
-| `Required environment variable is not set` | Missing env var     | Set all required variables               |
-| `Backend source directory is empty`        | Missing code        | Ensure `monorepo/backend/` exists        |
-| `Frontend build directory is empty`        | Build not run       | Run `npm run build` in frontend/         |
-| `SSH connection failed`                    | Invalid key/network | Verify SSH key and server access         |
-| `Health check failed`                      | App not responding  | Check Passenger logs on server           |
-| `Failed to set restrictive permissions`    | SSH key permissions | Ensure key file is owned by current user |
+| Error                                      | Cause               | Solution                                  |
+| ------------------------------------------ | ------------------- | ----------------------------------------- |
+| `Required environment variable is not set` | Missing env var     | Set all required variables                |
+| `Backend source directory is empty`        | Missing code        | Ensure `monorepo/backend/` exists         |
+| `Frontend build directory is empty`        | Build not run       | Run `npm run build` in frontend/          |
+| `SSH connection failed`                    | Invalid key/network | Verify SSH key and server access          |
+| `Health check failed`                      | App not responding  | Check Passenger logs on server            |
+| `Failed to set restrictive permissions`    | SSH key permissions | Ensure key file is owned by current user  |
+| `Failed to install uv`                     | Network/curl error  | Check remote server internet connectivity |
 
 ### Exit Codes
 
@@ -193,7 +195,7 @@ All tests use mocks - no actual network calls or database operations.
 
 ### Test Documentation
 
-See `tests/README.md` for detailed testing documentation including:
+See `scripts/tests/README.md` for detailed testing documentation including:
 
 - Mock framework usage
 - Writing new tests
@@ -208,6 +210,7 @@ See `tests/README.md` for detailed testing documentation including:
 - UAPI calls redirect output to `/dev/null` to prevent logging passwords
 - Signal traps (`EXIT`, `INT`, `TERM`) automatically unset secrets on script termination
 - SSH key permissions validated (must be `600`)
+- Audit logging for all security-relevant operations
 
 ### Known Limitations
 
@@ -223,7 +226,7 @@ The script validates environment variables to prevent injection attacks:
 
 - Blocks characters: `;`, `&`, `|`, `` ` ``, `$`, `(`, `)`
 - Validates SSH key file permissions
-- Scans requirements.txt for embedded credentials
+- Strict SSH command construction to prevent injection
 
 ### Audit Logging
 
@@ -232,6 +235,8 @@ All security-relevant operations are logged to syslog:
 ```bash
 logger -t deploy.sh -p user.info "Creating database: cpaneluser_blogdb"
 logger -t deploy.sh -p user.notice "Deployment completed successfully"
+logger -t "deploy.sh[uapi_call]" -p user.warning "uapi Postgresql::list_databases failed"
+logger -t "deploy.sh[setup_ssh_key]" -p user.error "Failed to verify SSH key permissions"
 ```
 
 View logs with: `journalctl -t deploy.sh` (Linux) or `/var/log/messages` (cPanel)
@@ -246,13 +251,15 @@ View logs with: `journalctl -t deploy.sh` (Linux) or `/var/log/messages` (cPanel
 │   ├── src/
 │   │   ├── passenger_wsgi.py   # WSGI entry point
 │   │   └── backend/            # Application code
-│   ├── requirements.txt        # Python dependencies
-│   └── pyproject.toml         # uv project definition
-├── build/                      # Frontend static files
+│   ├── scripts/
+│   │   └── create_schema.py    # Database schema creation script
+│   ├── pyproject.toml         # uv project definition
+│   └── uv.lock                # uv lockfile
+├── build/                      # Frontend static files (optional)
 │   ├── index.html
 │   ├── static/
 │   └── assets/
-└── venv/                       # Python virtual environment
+└── .venv/                      # uv-managed virtual environment
     ├── bin/
     ├── lib/
     └── pyvenv.cfg
@@ -276,7 +283,7 @@ The script registers a Passenger application with:
 
 ## Rollback
 
-To rollback a deployment:
+To roll back a deployment:
 
 1. **Database**: PostgreSQL is idempotent - old schema remains intact
 1. **Code**: Deploy previous git commit or manually revert files
@@ -320,6 +327,12 @@ To rollback a deployment:
    psql -h localhost -U "$CPANEL_POSTGRES_USER" -d "${CPANEL_USERNAME}_blogdb"
    ```
 
+1. **Check uv installation**:
+
+   ```bash
+   ssh ... "~/.cargo/bin/uv --version"
+   ```
+
 ### Common Issues
 
 **Frontend build missing**: Ensure you run `npm run build` before deploying.
@@ -329,6 +342,8 @@ To rollback a deployment:
 **Health check timeout**: Passenger may take 30-60 seconds to start the application on first deployment. The script automatically retries with backoff.
 
 **Database connection refused**: Verify PostgreSQL is running in cPanel and credentials are correct.
+
+**uv not found**: The script installs uv automatically. If installation fails, check remote server internet connectivity and curl availability.
 
 ## Future Enhancements
 
@@ -345,11 +360,11 @@ Potential improvements for future versions:
 
 ## Related Documentation
 
-- cPanel deployment strategies: `../../cpanel-deployment-patterns.md`
-- Backend configuration: `../backend/README.md`
-- WSGI entry point: `../backend/src/passenger_wsgi.py`
-- Test documentation: `tests/README.md`
-- Project structure: `../../.spec-workflow/steering/structure.md`
+- cPanel deployment strategies: `../cpanel-deployment-patterns.md`
+- Backend configuration: `backend/README.md`
+- WSGI entry point: `backend/src/passenger_wsgi.py`
+- Test documentation: `scripts/tests/README.md`
+- Project structure: `../.spec-workflow/steering/structure.md`
 
 ## Support
 
