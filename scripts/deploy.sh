@@ -36,6 +36,7 @@ USAGE:
   ./deploy.sh
 
 REQUIRED ENVIRONMENT VARIABLES:
+  DOMAIN                       - Domain name
   CPANEL_USERNAME              - cPanel/SSH username
   SERVER_IP_ADDRESS            - Server IP for SSH connection
   SSH_PRIVATE_KEY_PATH         - Path to SSH private key
@@ -58,8 +59,8 @@ IFS=$'\n\t'
 
 readonly SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 readonly PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd -P)"
-readonly DOMAIN="ashlynantrobus.dev"
-readonly APP_NAME="BlogAppProd"
+readonly DOMAIN=$DOMAIN
+readonly APP_NAME="MarkdownBlog"
 readonly BASE_URI="/"
 
 cleanup_secrets() {
@@ -360,12 +361,8 @@ run_schema() {
   run_remote_command "${SERVER_IP_ADDRESS}" bash <<'REMOTE_SCRIPT'
 set -Eeuo pipefail
 
-export PATH="$HOME/.cargo/bin:$PATH"
-
-cd ~/blog/backend
-
 echo "Creating database schema..."
-uv run scripts/create_schema.py
+uv run create-schema
 REMOTE_SCRIPT
 
   return 0
