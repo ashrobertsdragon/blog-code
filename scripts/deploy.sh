@@ -125,8 +125,11 @@ uapi_call() {
   shift 2
 
   local uapi_output
-  if ! uapi_output=$(uapi --output=jsonpretty "$module" "$function" "$@" 2>/dev/null); then
-    local exit_status=$?
+  local exit_status
+  uapi_output=$(uapi --output=jsonpretty "$module" "$function" "$@" 2>/dev/null)
+  exit_status=$?
+
+  if [[ $exit_status -ne 0 ]]; then
     logger -t "deploy.sh[uapi_call]" -p user.warning "uapi ${module}::${function} failed with exit status ${exit_status}"
     printf '%s\n' '{"data":[]}'
     return "${exit_status}"
@@ -220,11 +223,11 @@ ensure_database_exists() {
   local database_name="$1"
 
   local db_list
-  db_list=$(uapi_call Postgresql list_databases)
+  db_list=$(uapi_call Postgresql list_databases) || return 1
 
   if ! uapi_list_contains "$db_list" "$database_name"; then
     logger -t deploy.sh -p user.info "Creating database: ${database_name}"
-    uapi_call Postgresql create_database name="$database_name" >/dev/null 2>&1
+    uapi_call Postgresql create_database name="$database_name" >/dev/null 2>&1 || return 1
   fi
 
   return 0
@@ -235,13 +238,13 @@ ensure_user_exists() {
   local password="$2"
 
   local user_list
-  user_list=$(uapi_call Postgresql list_users)
+  user_list=$(uapi_call Postgresql list_users) || return 1
 
   if ! uapi_list_contains "$user_list" "$username"; then
     logger -t deploy.sh -p user.info "Creating PostgreSQL user: ${username}"
     uapi_call Postgresql create_user \
       name="$username" \
-      password="$password" >/dev/null 2>&1
+      password="$password" >/dev/null 2>&1 || return 1
   fi
 
   return 0
@@ -252,13 +255,13 @@ ensure_privileges_granted() {
   local database_name="$2"
 
   local privileges_list
-  privileges_list=$(uapi_call Postgresql list_privileges user="$username")
+  privileges_list=$(uapi_call Postgresql list_privileges user="$username") || return 1
 
   if ! uapi_list_contains "$privileges_list" "$database_name"; then
     logger -t deploy.sh -p user.info "Granting privileges to ${username} on ${database_name}"
     uapi_call Postgresql grant_all_privileges \
       user="$username" \
-      database="$database_name" >/dev/null 2>&1
+      database="$database_name" >/dev/null 2>&1 || return 1
   fi
 
   return 0
@@ -270,9 +273,9 @@ provision_database() {
 
   logger -t deploy.sh -p user.info "Provisioning database: ${database_name}"
 
-  ensure_database_exists "$database_name"
-  ensure_user_exists "$CPANEL_POSTGRES_USER" "$CPANEL_POSTGRES_PASSWORD"
-  ensure_privileges_granted "$CPANEL_POSTGRES_USER" "$database_name"
+  ensure_database_exists "$database_name" || return 1
+  ensure_user_exists "$CPANEL_POSTGRES_USER" "$CPANEL_POSTGRES_PASSWORD" || return 1
+  ensure_privileges_granted "$CPANEL_POSTGRES_USER" "$database_name" || return 1
 
   return 0
 }
@@ -291,7 +294,7 @@ upload_code() {
   rsync -avz --perms --checksum --delete \
     -e "ssh -i \"$SSH_PRIVATE_KEY_PATH\" -p \"$SSH_PORT\" -o StrictHostKeyChecking=accept-new" \
     "$backend_src" \
-    "${CPANEL_USERNAME}@${SERVER_IP_ADDRESS}:${remote_path}/backend/"
+    "${CPANEL_USERNAME}@${SERVER_IP_ADDRESS}:${remote_path}/backend/" || return 1
 
   if [[ -d "${PROJECT_ROOT}/monorepo/frontend/build" ]]; then
     local frontend_src="${PROJECT_ROOT}/monorepo/frontend/build/"
@@ -302,7 +305,7 @@ upload_code() {
       rsync -avz --perms --checksum --delete \
         -e "ssh -i \"$SSH_PRIVATE_KEY_PATH\" -p \"$SSH_PORT\" -o StrictHostKeyChecking=accept-new" \
         "$frontend_src" \
-        "${CPANEL_USERNAME}@${SERVER_IP_ADDRESS}:${remote_path}/build/"
+        "${CPANEL_USERNAME}@${SERVER_IP_ADDRESS}:${remote_path}/build/" || return 1
     fi
   fi
 
@@ -311,7 +314,7 @@ upload_code() {
 
 ensure_uv_installed() {
   logger -t deploy.sh -p user.info "Checking for uv installation on ${SERVER_IP_ADDRESS}"
-  run_remote_command "${SERVER_IP_ADDRESS}" bash <<'REMOTE_SCRIPT'
+  run_remote_command "${SERVER_IP_ADDRESS}" bash <<'REMOTE_SCRIPT' || return 1
 set -Eeuo pipefail
 
 if command -v uv &>/dev/null; then
@@ -337,7 +340,7 @@ REMOTE_SCRIPT
 
 install_application() {
   logger -t deploy.sh -p user.info "Installing application with uv on ${SERVER_IP_ADDRESS}"
-  run_remote_command "${SERVER_IP_ADDRESS}" bash <<'REMOTE_SCRIPT'
+  run_remote_command "${SERVER_IP_ADDRESS}" bash <<'REMOTE_SCRIPT' || return 1
 set -Eeuo pipefail
 
 export PATH="$HOME/.cargo/bin:$PATH"
@@ -358,7 +361,7 @@ REMOTE_SCRIPT
 
 run_schema() {
   logger -t deploy.sh -p user.info "Creating database schema on ${SERVER_IP_ADDRESS}"
-  run_remote_command "${SERVER_IP_ADDRESS}" bash <<'REMOTE_SCRIPT'
+  run_remote_command "${SERVER_IP_ADDRESS}" bash <<'REMOTE_SCRIPT' || return 1
 set -Eeuo pipefail
 
 echo "Creating database schema..."
@@ -377,7 +380,7 @@ register_passenger() {
   logger -t deploy.sh -p user.info "Registering Passenger application: ${APP_NAME}"
 
   local app_list
-  app_list=$(uapi_call PassengerApps list_applications)
+  app_list=$(uapi_call PassengerApps list_applications) || return 1
 
   local app_exists=0
   if uapi_list_contains "$app_list" "$APP_NAME"; then
@@ -399,7 +402,7 @@ register_passenger() {
       envvar_name_5="GITHUB_PERSONAL_ACCESS_TOKEN" envvar_value_5="$GITHUB_PERSONAL_ACCESS_TOKEN" \
       envvar_name_6="RESEND_API_KEY" envvar_value_6="$RESEND_API_KEY" \
       envvar_name_7="CLERK_PUBLISHABLE_KEY" envvar_value_7="$CLERK_PUBLISHABLE_KEY" \
-      envvar_name_8="CLERK_SECRET_KEY" envvar_value_8="$CLERK_SECRET_KEY" >/dev/null 2>&1
+      envvar_name_8="CLERK_SECRET_KEY" envvar_value_8="$CLERK_SECRET_KEY" >/dev/null 2>&1 || return 1
   else
     logger -t deploy.sh -p user.notice "Updating existing Passenger application environment variables"
     uapi_call PassengerApps update_application \
@@ -411,7 +414,7 @@ register_passenger() {
       envvar_name_5="GITHUB_PERSONAL_ACCESS_TOKEN" envvar_value_5="$GITHUB_PERSONAL_ACCESS_TOKEN" \
       envvar_name_6="RESEND_API_KEY" envvar_value_6="$RESEND_API_KEY" \
       envvar_name_7="CLERK_PUBLISHABLE_KEY" envvar_value_7="$CLERK_PUBLISHABLE_KEY" \
-      envvar_name_8="CLERK_SECRET_KEY" envvar_value_8="$CLERK_SECRET_KEY" >/dev/null 2>&1
+      envvar_name_8="CLERK_SECRET_KEY" envvar_value_8="$CLERK_SECRET_KEY" >/dev/null 2>&1 || return 1
   fi
 
   return 0
@@ -449,33 +452,33 @@ main() {
   logger -t deploy.sh -p user.notice "Starting deployment to ${DOMAIN}"
   printf "Starting deployment to %s...\n" "$DOMAIN"
 
-  confirm_production_deployment
+  confirm_production_deployment || return 1
 
-  validate_environment
+  validate_environment || return 1
   printf "✓ Environment variables validated\n"
 
-  setup_ssh_key
+  setup_ssh_key || return 1
   printf "✓ SSH key configured\n"
 
-  provision_database
+  provision_database || return 1
   printf "✓ Database provisioned\n"
 
-  upload_code
+  upload_code || return 1
   printf "✓ Code uploaded\n"
 
-  ensure_uv_installed
+  ensure_uv_installed || return 1
   printf "✓ uv installation verified\n"
 
-  install_application
+  install_application || return 1
   printf "✓ Application installed\n"
 
-  run_schema
+  run_schema || return 1
   printf "✓ Database schema created\n"
 
-  register_passenger
+  register_passenger || return 1
   printf "✓ Passenger application registered\n"
 
-  verify_deployment
+  verify_deployment || return 1
   printf "✓ Deployment verified\n"
 
   logger -t deploy.sh -p user.notice "Deployment completed successfully for ${DOMAIN}"

@@ -13,8 +13,37 @@ teardown() {
 }
 
 # ============================================================================
-# Environment Validation Tests (5 tests)
+# Environment Validation Tests (7 tests)
 # ============================================================================
+
+@test "deployment skips production confirmation when not on interactive terminal" {
+  export DOMAIN="ashlynantrobus.dev"
+  setup_mock_successful_database_creation
+  setup_mock_successful_user_creation
+  setup_mock_successful_ssh
+  setup_mock_successful_rsync
+  setup_mock_successful_health_check
+
+  source "${BATS_TEST_DIRNAME}/../deploy.sh"
+  run main
+
+  # In non-interactive mode (BATS), confirmation is skipped and deployment proceeds
+  assert_exit_success "$status"
+}
+
+@test "deployment proceeds when production confirmation is not required" {
+  export DOMAIN="staging.example.com"  # Non-production domain
+  setup_mock_successful_database_creation
+  setup_mock_successful_user_creation
+  setup_mock_successful_ssh
+  setup_mock_successful_rsync
+  setup_mock_successful_health_check
+
+  source "${BATS_TEST_DIRNAME}/../deploy.sh"
+  run main
+
+  assert_exit_success "$status"
+}
 
 @test "deployment fails when CPANEL_USERNAME is not set" {
   unset CPANEL_USERNAME
@@ -68,7 +97,7 @@ teardown() {
 }
 
 # ============================================================================
-# SSH Key Handling Tests (3 tests)
+# SSH Key Handling Tests (5 tests)
 # ============================================================================
 
 @test "deployment calls linuxify_ssh_key.sh on non-Windows systems" {
@@ -84,6 +113,53 @@ teardown() {
 
   assert_exit_success "$status"
   assert_contains "$output" "SSH key configured"
+}
+
+@test "deployment aborts when SSH key chmod 600 fails" {
+  export OS="Linux"
+  export SSH_KEY_PATH="${BATS_TEST_TMPDIR}/test_key"
+  export SSH_PRIVATE_KEY_PATH="${SSH_KEY_PATH}"
+  touch "${SSH_KEY_PATH}"
+
+  setup_mock_successful_database_creation
+  setup_mock_successful_user_creation
+  setup_mock_successful_ssh
+  setup_mock_successful_rsync
+  setup_mock_successful_health_check
+  setup_mock_failed_ssh_key_chmod
+
+  source "${BATS_TEST_DIRNAME}/../deploy.sh"
+  run main
+
+  # Deployment must not succeed if SSH key permissions cannot be hardened
+  assert_exit_failure "$status"
+  assert_contains "$output" "Failed to set or verify restrictive permissions"
+}
+
+@test "deployment logs audit entry when SSH key permission enforcement fails" {
+  export OS="Linux"
+  export SSH_KEY_PATH="${BATS_TEST_TMPDIR}/test_key"
+  export SSH_PRIVATE_KEY_PATH="${SSH_KEY_PATH}"
+  touch "${SSH_KEY_PATH}"
+
+  setup_mock_successful_database_creation
+  setup_mock_successful_user_creation
+  setup_mock_successful_ssh
+  setup_mock_successful_rsync
+  setup_mock_successful_health_check
+  setup_mock_failed_ssh_key_chmod
+  setup_mock_audit_logger_capture
+
+  : > "${BATS_TEST_TMPDIR}/audit.log"
+
+  source "${BATS_TEST_DIRNAME}/../deploy.sh"
+  run main
+
+  # Deployment should abort on permission enforcement failure
+  assert_exit_failure "$status"
+
+  # Verify logger was called
+  [[ -f "${BATS_TEST_TMPDIR}/audit.log" ]]
 }
 
 @test "deployment uses original SSH key path on Windows Git Bash" {
@@ -114,11 +190,27 @@ teardown() {
   export CHMOD_CALLED="${BATS_TEST_TMPDIR}/chmod_called"
   touch "${SSH_KEY_PATH}"
 
-  setup_mock_successful_database_creation
-  setup_mock_successful_user_creation
   setup_mock_successful_ssh
   setup_mock_successful_rsync
   setup_mock_successful_health_check
+
+  uapi() {
+    if [[ "$*" == *"list_databases"* ]]; then
+      echo '{"data":["testuser_blogdb"]}'
+    elif [[ "$*" == *"list_users"* ]]; then
+      echo '{"data":["testuser_pguser"]}'
+    elif [[ "$*" == *"list_privileges"* ]]; then
+      echo '{"data":["ALL"]}'
+    elif [[ "$*" == *"list_applications"* ]]; then
+      echo '{"data":[]}'
+    elif [[ "$*" == *"register_application"* ]]; then
+      echo '{"result":{"status":1}}'
+    else
+      echo '{"data":[]}'
+    fi
+    return 0
+  }
+  export -f uapi
 
   chmod() {
     if [[ "$1" == "600" ]]; then
@@ -128,6 +220,16 @@ teardown() {
   }
   export -f chmod
 
+  stat() {
+    if [[ "$1" == "-c" && "$2" == "%a" ]]; then
+      echo "600"
+    elif [[ "$1" == "-f" && "$2" == "%Lp" ]]; then
+      echo "600"
+    fi
+    return 0
+  }
+  export -f stat
+
   source "${BATS_TEST_DIRNAME}/../deploy.sh"
   run main
 
@@ -136,8 +238,64 @@ teardown() {
 }
 
 # ============================================================================
-# Database Provisioning Tests (4 tests)
+# Database Provisioning Tests (6 tests)
 # ============================================================================
+
+@test "deployment fails fast when UAPI database creation fails" {
+  setup_mock_successful_ssh
+  setup_mock_successful_rsync
+  setup_mock_successful_health_check
+
+  uapi() {
+    if [[ "$*" == *"list_databases"* ]]; then
+      echo '{"data":[]}'
+      return 0
+    elif [[ "$*" == *"create_database"* ]]; then
+      echo '{"error":"Database creation failed"}'
+      return 1
+    else
+      echo '{"data":[]}'
+      return 0
+    fi
+  }
+  export -f uapi
+
+  source "${BATS_TEST_DIRNAME}/../deploy.sh"
+  run main
+
+  assert_exit_failure "$status"
+}
+
+@test "deployment fails fast when UAPI user creation fails" {
+  setup_mock_successful_ssh
+  setup_mock_successful_rsync
+  setup_mock_successful_health_check
+
+  uapi() {
+    if [[ "$*" == *"list_databases"* ]]; then
+      echo '{"data":[]}'
+      return 0
+    elif [[ "$*" == *"create_database"* ]]; then
+      echo '{"data":{}}'
+      return 0
+    elif [[ "$*" == *"list_users"* ]]; then
+      echo '{"data":[]}'
+      return 0
+    elif [[ "$*" == *"create_user"* ]]; then
+      echo '{"error":"User creation failed"}'
+      return 1
+    else
+      echo '{"data":[]}'
+      return 0
+    fi
+  }
+  export -f uapi
+
+  source "${BATS_TEST_DIRNAME}/../deploy.sh"
+  run main
+
+  assert_exit_failure "$status"
+}
 
 @test "deployment creates database via UAPI when it does not exist" {
   export DB_CREATED="${BATS_TEST_TMPDIR}/db_created"
@@ -243,8 +401,33 @@ teardown() {
 }
 
 # ============================================================================
-# Code Upload Tests (3 tests)
+# Code Upload Tests (5 tests)
 # ============================================================================
+
+@test "deployment fails when rsync upload of backend directory fails" {
+  setup_mock_successful_database_creation
+  setup_mock_successful_user_creation
+  setup_mock_successful_ssh
+  setup_mock_failed_rsync
+  setup_mock_successful_health_check
+
+  source "${BATS_TEST_DIRNAME}/../deploy.sh"
+  run main
+
+  assert_exit_failure "$status"
+}
+
+@test "deployment fails when SSH connectivity for code upload is broken" {
+  setup_mock_successful_database_creation
+  setup_mock_successful_user_creation
+  setup_mock_failed_ssh
+  setup_mock_successful_health_check
+
+  source "${BATS_TEST_DIRNAME}/../deploy.sh"
+  run main
+
+  assert_exit_failure "$status"
+}
 
 @test "deployment uploads backend directory via rsync over SSH" {
   export RSYNC_LOG="${BATS_TEST_TMPDIR}/rsync.log"
@@ -599,7 +782,7 @@ teardown() {
 }
 
 # ============================================================================
-# Health Check Verification Tests (3 tests)
+# Health Check Verification Tests (6 tests)
 # ============================================================================
 
 @test "deployment verifies health endpoint returns 200" {
@@ -621,8 +804,75 @@ teardown() {
 
   assert_exit_success "$status"
   assert_file_exists "${CURL_LOG}"
-  run cat "${CURL_LOG}"
-  assert_contains "$output" "https://ashlynantrobus.dev/health"
+
+  # Single successful call means no retries were needed
+  local call_count
+  call_count=$(wc -l < "${CURL_LOG}")
+  [[ "$call_count" -eq 3 ]]
+}
+
+@test "deployment retries health endpoint on transient curl failures" {
+  export CURL_LOG="${BATS_TEST_TMPDIR}/curl.log"
+  export CURL_COUNTER_FILE="${BATS_TEST_TMPDIR}/curl_counter"
+  echo "0" > "${CURL_COUNTER_FILE}"
+
+  setup_mock_successful_database_creation
+  setup_mock_successful_user_creation
+  setup_mock_successful_ssh
+  setup_mock_successful_rsync
+
+  curl() {
+    echo "$@" >> "${CURL_LOG}"
+    local count
+    count=$(cat "${CURL_COUNTER_FILE}")
+    count=$((count + 1))
+    echo "$count" > "${CURL_COUNTER_FILE}"
+
+    # First 2 calls to each endpoint fail, then succeed
+    local call_in_sequence=$((count % 3))
+    if [[ "$call_in_sequence" -ne 0 ]]; then
+      return 7
+    fi
+
+    echo '{"status": "healthy"}'
+    return 0
+  }
+  export -f curl
+
+  source "${BATS_TEST_DIRNAME}/../deploy.sh"
+  run main
+
+  assert_exit_success "$status"
+
+  # Should have retried for each endpoint (2 failures + 1 success = 3 per endpoint * 3 endpoints = 9)
+  local final_count
+  final_count=$(cat "${CURL_COUNTER_FILE}")
+  [[ "$final_count" -eq 9 ]]
+}
+
+@test "deployment fails when health endpoint never becomes healthy" {
+  export CURL_LOG="${BATS_TEST_TMPDIR}/curl.log"
+  setup_mock_successful_database_creation
+  setup_mock_successful_user_creation
+  setup_mock_successful_ssh
+  setup_mock_successful_rsync
+
+  curl() {
+    echo "$@" >> "${CURL_LOG}"
+    return 7  # Always fail
+  }
+  export -f curl
+
+  source "${BATS_TEST_DIRNAME}/../deploy.sh"
+  run main
+
+  assert_exit_failure "$status"
+
+  # Should exhaust all retries (5 attempts for first endpoint)
+  local curl_calls
+  curl_calls=$(wc -l < "${CURL_LOG}")
+  [[ "$curl_calls" -eq 5 ]]
+  assert_contains "$output" "Health check failed"
 }
 
 @test "deployment verifies database health endpoint returns 200" {

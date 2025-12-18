@@ -180,8 +180,22 @@ jq() {
   return "$exit_code"
 }
 
+logger() {
+  log_mock_call "logger" "$@"
+
+  local output
+  output="$(get_mock_output "logger")"
+  if [[ -n "$output" ]]; then
+    echo "$output"
+  fi
+
+  local exit_code
+  exit_code="$(get_mock_exit_code "logger")"
+  return "$exit_code"
+}
+
 export -f log_mock_call get_mock_exit_code get_mock_output
-export -f ssh uapi rsync curl jq
+export -f ssh uapi rsync curl jq logger
 
 setup_test_environment() {
   export CPANEL_USERNAME="testuser"
@@ -196,6 +210,11 @@ setup_test_environment() {
   export RESEND_API_KEY="re_test123456789"
   export CLERK_PUBLISHABLE_KEY="pk_test_123456789"
   export CLERK_SECRET_KEY="sk_test_123456789"
+  export DOMAIN="ashlynantrobus.dev"
+
+  # Initialize logger to succeed silently by default
+  set_mock_exit_code "logger" 0
+  set_mock_output "logger" ""
 }
 
 unset_test_environment() {
@@ -211,6 +230,7 @@ unset_test_environment() {
   unset RESEND_API_KEY
   unset CLERK_PUBLISHABLE_KEY
   unset CLERK_SECRET_KEY
+  unset DOMAIN
 }
 
 is_windows() {
@@ -422,4 +442,43 @@ load_fixture() {
   local fixtures_dir
   fixtures_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/fixtures" && pwd)"
   cat "${fixtures_dir}/${fixture_name}"
+}
+
+setup_mock_failed_ssh_key_chmod() {
+  local shim_dir system_chmod
+  shim_dir="${BATS_TEST_TMPDIR}/chmod_shim"
+  mkdir -p "$shim_dir"
+
+  system_chmod="$(command -v chmod)"
+
+  cat >"${shim_dir}/chmod" <<EOF
+#!/usr/bin/env bash
+# Only fail when attempting to harden SSH key permissions.
+if [[ "\$1" == "600" ]]; then
+  echo "mock chmod failure for SSH key permissions" >&2
+  exit 1
+fi
+
+exec "${system_chmod}" "\$@"
+EOF
+
+  chmod +x "${shim_dir}/chmod"
+  export PATH="${shim_dir}:$PATH"
+}
+
+setup_mock_audit_logger_capture() {
+  local shim_dir
+  shim_dir="${BATS_TEST_TMPDIR}/logger_shim"
+  mkdir -p "$shim_dir"
+
+  # The deploy script is expected to use logger for audit logging.
+  cat >"${shim_dir}/logger" <<EOF
+#!/usr/bin/env bash
+# Append all audit log lines to a test-local file for assertion.
+echo "\$@" >>"${BATS_TEST_TMPDIR}/audit.log"
+exit 0
+EOF
+
+  chmod +x "${shim_dir}/logger"
+  export PATH="${shim_dir}:$PATH"
 }

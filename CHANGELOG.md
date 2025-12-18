@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cross-platform SSH key handling (Windows Git Bash and Linux compatibility)
   - Security features: input sanitization, secret suppression, audit logging
   - Production deployment confirmation prompt for safety
-  - BATS test suite with 30+ tests covering validation, provisioning, error handling, and idempotency
+  - BATS test suite with 40 tests covering validation, provisioning, error handling, and idempotency
   - Detailed deployment documentation with prerequisites and usage examples
 
 - **Backend**: Implemented Passenger WSGI entry point in `src/passenger_wsgi.py`
@@ -85,8 +85,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Deployment**: Critical bug fix in error handling for deployment script
+
+  - Fixed `uapi_call()` function to correctly capture and propagate command exit codes
+  - Previously, `if ! command; then` pattern was causing `$?` to be 0 (success of if-test negation) instead of the actual command failure code
+  - Changed to explicitly capture exit status before testing: `command; exit_status=$?; if [[ $exit_status -ne 0 ]]; then`
+  - This ensures deployment aborts immediately when UAPI operations fail instead of continuing silently
+  - Added comprehensive error checking (`|| return 1`) to all deployment functions for fail-fast behavior
+  - Fixed tests 12, 13, and 14 which were failing assertions but not executing
+  - Test 12: Added `stat` mock for SSH key permission verification
+  - Tests 13-14: Added proper UAPI mocks that handle different operations independently
+
 - **Frontend**: Updated frontend dependencies to latest versions.
+
 - **Frontend**: Corrected Biome configuration to remove redundant include paths.
+
 - **Frontend**: Separated Vitest configuration into `vitest.config.ts` and ensured shared configuration with `vite.config.ts` using `mergeConfig`.
 
 ## v0.1.2 (2025-11-17)
