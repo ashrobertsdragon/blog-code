@@ -167,6 +167,7 @@ sanitize_input() {
 
 validate_environment() {
   local required_vars=(
+    DOMAIN
     CPANEL_USERNAME
     SERVER_IP_ADDRESS
     SSH_PRIVATE_KEY_PATH
