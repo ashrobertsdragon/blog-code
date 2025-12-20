@@ -13,7 +13,7 @@ teardown() {
 }
 
 # ============================================================================
-# Environment Validation Tests (7 tests)
+# Environment Validation Tests (6 tests)
 # ============================================================================
 
 @test "deployment skips production confirmation when not on interactive terminal" {
@@ -727,7 +727,7 @@ teardown() {
 }
 
 # ============================================================================
-# Health Check Verification Tests (6 tests)
+# Health Check Verification Tests (5 tests)
 # ============================================================================
 
 @test "deployment verifies health endpoint returns 200" {

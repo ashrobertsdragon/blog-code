@@ -186,12 +186,14 @@ bats deploy.bats --tap
 
 ### Test Coverage
 
-- **Environment Validation** (5 tests): Missing variables, invalid input
-- **Database Provisioning** (8 tests): Creation, idempotency, error handling
-- **User Provisioning** (5 tests): User creation, privilege grants, failures
-- **Code Upload** (4 tests): Rsync success/failure, file validation
-- **Health Checks** (3 tests): Endpoint verification, retry logic
-- **Integration** (5 tests): End-to-end deployment scenarios
+- **Environment Validation** (6 tests): Missing variables, invalid input, production confirmation.
+- **SSH Key Handling** (3 tests): Permissions and error handling.
+- **Database Provisioning** (6 tests): DB/user creation, privileges, idempotency.
+- **Code Upload** (5 tests): Rsync success/failure, frontend/backend assets.
+- **uv and Application Installation** (4 tests): Remote `uv` and dependency installation.
+- **Schema Execution** (3 tests): Remote schema script execution.
+- **Passenger Registration** (5 tests): App configuration and environment variables.
+- **Health Check Verification** (5 tests): Endpoint checks with retry logic.
 
 All tests use mocks - no actual network calls or database operations.
 
