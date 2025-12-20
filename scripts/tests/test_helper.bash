@@ -10,7 +10,7 @@ declare -gxA MOCK_EXIT_CODES
 declare -gxA MOCK_OUTPUTS
 
 reset_mock_state() {
-  unset MOCK_CALL_LOG MOCK_CALL_COUNT MOCK_EXIT_CODES MOCK_OUTPUTS
+  unset MOCK_CALL_LOG MOCK_CALL_COUNT MOCK_EXIT_CODES MOCK_OUTPUTS MOCK_CHMOD_FAIL_ON_600
   declare -gA MOCK_CALL_LOG
   declare -gA MOCK_CALL_COUNT
   declare -gA MOCK_EXIT_CODES
@@ -194,14 +194,54 @@ logger() {
   return "$exit_code"
 }
 
+chmod() {
+  log_mock_call "chmod" "$@"
+
+  if [[ "${MOCK_CHMOD_FAIL_ON_600:-}" == "1" ]] && [[ "$1" == "600" ]]; then
+    echo "mock chmod failure for SSH key permissions" >&2
+    return 1
+  fi
+
+  local output
+  output="$(get_mock_output "chmod")"
+  if [[ -n "$output" ]]; then
+    echo "$output"
+  fi
+
+  local exit_code
+  exit_code="$(get_mock_exit_code "chmod")"
+  return "$exit_code"
+}
+
+stat() {
+  log_mock_call "stat" "$@"
+
+  local output
+  output="$(get_mock_output "stat")"
+  if [[ -n "$output" ]]; then
+    echo "$output"
+  else
+    if [[ "$1" == "-c" && "$2" == "%a" ]]; then
+      echo "600"
+    elif [[ "$1" == "-f" && "$2" == "%Lp" ]]; then
+      echo "600"
+    fi
+  fi
+
+  local exit_code
+  exit_code="$(get_mock_exit_code "stat")"
+  return "$exit_code"
+}
+
 export -f log_mock_call get_mock_exit_code get_mock_output
-export -f ssh uapi rsync curl jq logger
+export -f ssh uapi rsync curl jq logger chmod stat
 
 setup_test_environment() {
+  export TEST_ENVIRONMENT_INITIALIZED=1
   export CPANEL_USERNAME="testuser"
   export CPANEL_API_KEY="test_api_key_12345"
   export SERVER_IP_ADDRESS="192.0.2.1"
-  export SSH_PRIVATE_KEY_PATH="C:/Users/test/.ssh/test_key"
+  export SSH_PRIVATE_KEY_PATH="${BATS_TEST_TMPDIR}/test_ssh_key"
   export SSH_PORT="22"
   export CPANEL_POSTGRES_USER="testuser_pguser"
   export CPANEL_POSTGRES_PASSWORD="test_pg_password"
@@ -212,12 +252,31 @@ setup_test_environment() {
   export CLERK_SECRET_KEY="sk_test_123456789"
   export DOMAIN="ashlynantrobus.dev"
 
-  # Initialize logger to succeed silently by default
+  # Create SSH key file for tests (required by simplified setup_ssh_key())
+  touch "${SSH_PRIVATE_KEY_PATH}"
+  chmod 600 "${SSH_PRIVATE_KEY_PATH}"
+
+  # Create backend directory structure for upload_code validation
+  local test_backend="${BATS_TEST_TMPDIR}/backend"
+  mkdir -p "${test_backend}/src"
+  touch "${test_backend}/pyproject.toml"
+
+  # Override PROJECT_ROOT to point to test directory
+  export PROJECT_ROOT="${BATS_TEST_TMPDIR}"
+  mkdir -p "${BATS_TEST_TMPDIR}/monorepo/backend/src"
+  touch "${BATS_TEST_TMPDIR}/monorepo/backend/pyproject.toml"
+
+  # Initialize mocks to succeed silently by default
   set_mock_exit_code "logger" 0
   set_mock_output "logger" ""
+  set_mock_exit_code "chmod" 0
+  set_mock_output "chmod" ""
+  set_mock_exit_code "stat" 0
+  set_mock_output "stat" ""
 }
 
 unset_test_environment() {
+  unset TEST_ENVIRONMENT_INITIALIZED
   unset CPANEL_USERNAME
   unset CPANEL_API_KEY
   unset SERVER_IP_ADDRESS
@@ -445,25 +504,9 @@ load_fixture() {
 }
 
 setup_mock_failed_ssh_key_chmod() {
-  local shim_dir system_chmod
-  shim_dir="${BATS_TEST_TMPDIR}/chmod_shim"
-  mkdir -p "$shim_dir"
-
-  system_chmod="$(command -v chmod)"
-
-  cat >"${shim_dir}/chmod" <<EOF
-#!/usr/bin/env bash
-# Only fail when attempting to harden SSH key permissions.
-if [[ "\$1" == "600" ]]; then
-  echo "mock chmod failure for SSH key permissions" >&2
-  exit 1
-fi
-
-exec "${system_chmod}" "\$@"
-EOF
-
-  chmod +x "${shim_dir}/chmod"
-  export PATH="${shim_dir}:$PATH"
+  export MOCK_CHMOD_FAIL_ON_600=1
+  set_mock_exit_code "stat" 0
+  set_mock_output "stat" ""
 }
 
 setup_mock_audit_logger_capture() {

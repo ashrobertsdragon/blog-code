@@ -16,7 +16,6 @@ version = "0.1.0"
 
 [project.scripts]
 create-schema = "scripts.create_schema:main"
-test = "scripts.test:main"
 
 [build-system]
 requires = ["uv_build>=0.9.5,<0.10.0"]

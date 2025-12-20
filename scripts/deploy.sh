@@ -79,13 +79,16 @@ if [[ "${CPANEL_USERNAME:-}" == "testuser" ]] && [[ -f "${SCRIPT_DIR}/tests/test
 
   if ! command -v uapi &>/dev/null; then
     source "${SCRIPT_DIR}/tests/test_helper.bash"
-    reset_mock_state
-    setup_test_environment
-    setup_mock_successful_database_creation
-    setup_mock_successful_user_creation
-    setup_mock_successful_ssh
-    setup_mock_successful_rsync
-    setup_mock_successful_health_check
+
+    if [[ "${TEST_ENVIRONMENT_INITIALIZED:-}" != "1" ]]; then
+      reset_mock_state
+      setup_test_environment
+      setup_mock_successful_database_creation
+      setup_mock_successful_user_creation
+      setup_mock_successful_ssh
+      setup_mock_successful_rsync
+      setup_mock_successful_health_check
+    fi
   fi
 fi
 
@@ -190,30 +193,21 @@ validate_environment() {
 }
 
 setup_ssh_key() {
-  local is_windows=0
-
-  if [[ "${OS:-}" == "Windows_NT" ]] || [[ "$(uname -s 2>/dev/null || echo unknown)" =~ ^MINGW|^MSYS ]]; then
-    is_windows=1
+  if [[ ! -f "$SSH_PRIVATE_KEY_PATH" ]]; then
+    logger -t "deploy.sh[setup_ssh_key]" -p user.error "SSH key file not found at ${SSH_PRIVATE_KEY_PATH}"
+    printf "ERROR: SSH key file not found at %s\n" "$SSH_PRIVATE_KEY_PATH" >&2
+    return 1
   fi
 
-  if [[ "$is_windows" -eq 0 ]]; then
-    local linuxify_path
-    linuxify_path="${PROJECT_ROOT}/linuxify_ssh_key.sh"
-    if [[ -x "$linuxify_path" ]]; then
-      "$linuxify_path"
-    fi
-  fi
+  chmod 600 -- "$SSH_PRIVATE_KEY_PATH" || return 1
 
-  if [[ -f "$SSH_PRIVATE_KEY_PATH" ]]; then
-    chmod 600 -- "$SSH_PRIVATE_KEY_PATH"
-    local actual_perms
-    actual_perms=$(stat -c %a "$SSH_PRIVATE_KEY_PATH" 2>/dev/null || stat -f %Lp "$SSH_PRIVATE_KEY_PATH" 2>/dev/null)
+  local actual_perms
+  actual_perms=$(stat -c %a "$SSH_PRIVATE_KEY_PATH" 2>/dev/null || stat -f %Lp "$SSH_PRIVATE_KEY_PATH" 2>/dev/null)
 
-    if [[ -z "$actual_perms" ]] || [[ "$actual_perms" != "600" ]]; then
-      logger -t "deploy.sh[setup_ssh_key]" -p user.error "Failed to set or verify restrictive permissions (600) on SSH key"
-      printf "ERROR: Failed to set or verify restrictive permissions (600) on SSH key. Please check file ownership and permissions.\n" >&2
-      return 1
-    fi
+  if [[ -z "$actual_perms" ]] || [[ "$actual_perms" != "600" ]]; then
+    logger -t "deploy.sh[setup_ssh_key]" -p user.error "Failed to set or verify proper permissions (600) on SSH key"
+    printf "ERROR: Failed to set or verify proper permissions (600) on SSH key. Please check file ownership and permissions.\n" >&2
+    return 1
   fi
 
   return 0
@@ -291,10 +285,10 @@ upload_code() {
   fi
 
   logger -t deploy.sh -p user.info "Uploading backend code to ${SERVER_IP_ADDRESS}"
-  rsync -avz --perms --checksum --delete \
-    -e "ssh -i \"$SSH_PRIVATE_KEY_PATH\" -p \"$SSH_PORT\" -o StrictHostKeyChecking=accept-new" \
-    "$backend_src" \
-    "${CPANEL_USERNAME}@${SERVER_IP_ADDRESS}:${remote_path}/backend/" || return 1
+  rsync -avz --perms --checksum --delete
+    -e "ssh -i \"$SSH_PRIVATE_KEY_PATH\" -p \"$SSH_PORT\" -o StrictHostKeyChecking=accept-new"
+    "$backend_src"
+    "${CPANEL_USERNAME}@${SERVER_IP_ADDRESS}:${remote_path}/" || return 1
 
   if [[ -d "${PROJECT_ROOT}/monorepo/frontend/build" ]]; then
     local frontend_src="${PROJECT_ROOT}/monorepo/frontend/build/"
@@ -435,7 +429,7 @@ verify_deployment() {
 }
 
 confirm_production_deployment() {
-  if [[ "${DOMAIN}" == "ashlynantrobus.dev" ]] && [[ -t 0 ]]; then
+  if [[ "${DOMAIN}" == "ashlynantrobus.dev" ]] && [[ -t 0 ]] && [[ -z "${BATS_TEST_TMPDIR:-}" ]]; then
     printf "WARNING: Deploying to PRODUCTION domain: %s\n" "$DOMAIN" >&2
     printf "Continue? (yes/no): " >&2
     local response

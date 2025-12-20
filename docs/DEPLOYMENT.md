@@ -83,7 +83,7 @@ The script will:
 
 ### Production Deployment Confirmation
 
-When deploying to the production domain (`ashlynantrobus.dev`), the script will prompt for confirmation:
+When deploying to the production domain (`ashlynantrobus.dev`), the script will prompt for confirmation in interactive terminals:
 
 ```text
 WARNING: Deploying to PRODUCTION domain: ashlynantrobus.dev
@@ -91,6 +91,8 @@ Continue? (yes/no):
 ```
 
 Type `yes` to proceed or `no` to cancel.
+
+**Note**: This confirmation prompt is automatically bypassed when the script is run in a non-interactive environment (e.g., a CI/CD pipeline), allowing for safe, automated deployments.
 
 ### Cross-Platform SSH Key Handling
 
@@ -193,15 +195,6 @@ bats deploy.bats --tap
 
 All tests use mocks - no actual network calls or database operations.
 
-### Test Documentation
-
-See `scripts/tests/README.md` for detailed testing documentation including:
-
-- Mock framework usage
-- Writing new tests
-- Debugging failed tests
-- Best practices
-
 ## Security Considerations
 
 ### Secret Handling
@@ -247,14 +240,10 @@ View logs with: `journalctl -t deploy.sh` (Linux) or `/var/log/messages` (cPanel
 
 ```plaintext
 /home/$CPANEL_USERNAME/blog/
-├── backend/                    # Backend code
-│   ├── src/
-│   │   ├── passenger_wsgi.py   # WSGI entry point
-│   │   └── backend/            # Application code
-│   ├── scripts/
-│   │   └── create_schema.py    # Database schema creation script
-│   ├── pyproject.toml         # uv project definition
-│   └── uv.lock                # uv lockfile
+├── passenger_wsgi.py   # WSGI entry point
+├── scripts/
+│   └── create_schema.py    # Database schema creation script
+├── backend/                    # Application code
 ├── build/                      # Frontend static files (optional)
 │   ├── index.html
 │   ├── static/
