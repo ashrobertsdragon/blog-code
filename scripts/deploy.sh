@@ -286,9 +286,9 @@ upload_code() {
   fi
 
   logger -t deploy.sh -p user.info "Uploading backend code to ${SERVER_IP_ADDRESS}"
-  rsync -avz --perms --checksum --delete
-    -e "ssh -i \"$SSH_PRIVATE_KEY_PATH\" -p \"$SSH_PORT\" -o StrictHostKeyChecking=accept-new"
-    "$backend_src"
+  rsync -avz --perms --checksum --delete \
+    -e "ssh -i \"$SSH_PRIVATE_KEY_PATH\" -p \"$SSH_PORT\" \
+    -o StrictHostKeyChecking=accept-new" "$backend_src" \
     "${CPANEL_USERNAME}@${SERVER_IP_ADDRESS}:${remote_path}/" || return 1
 
   if [[ -d "${PROJECT_ROOT}/monorepo/frontend/build" ]]; then
@@ -339,13 +339,9 @@ install_application() {
 set -Eeuo pipefail
 
 export PATH="$HOME/.cargo/bin:$PATH"
-
-echo "Checking Python version..."
-python3 --version
+cd ~/blog
 
 echo "Installing application dependencies with uv..."
-cd ~/blog/backend
-
 uv sync --frozen
 
 echo "✓ Application dependencies installed"
@@ -358,6 +354,9 @@ run_schema() {
   logger -t deploy.sh -p user.info "Creating database schema on ${SERVER_IP_ADDRESS}"
   run_remote_command "${SERVER_IP_ADDRESS}" bash <<'REMOTE_SCRIPT' || return 1
 set -Eeuo pipefail
+
+export PATH="$HOME/.cargo/bin:$PATH"
+cd ~/blog
 
 echo "Creating database schema..."
 uv run create-schema
