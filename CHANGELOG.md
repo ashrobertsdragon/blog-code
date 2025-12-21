@@ -72,6 +72,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Comprehensive test suite: 12 unit tests + 18 integration tests (100% coverage for main.py)
   - Security tests: 5 tests covering path traversal attack vectors (direct, middle, URL-encoded, backslash, exception handling)
 
+- **Integration Testing**: Implemented local build and E2E integration test suite
+
+  - Created `scripts/build.sh` for automated frontend production builds
+  - Implemented comprehensive E2E test suite in `backend/tests/e2e/test_build.py`
+  - Tests verify frontend build artifacts (index.html, static/, JS bundles)
+  - Tests verify Flask server startup and health endpoint responses
+  - Tests verify React SPA serving and client-side routing behavior
+  - Tests verify API routes excluded from SPA catch-all routing
+  - Added `wait_for_server()` utility in `backend/tests/e2e/utils.py` for server readiness checks
+  - Pytest fixtures for build execution and Flask server daemon thread management
+  - BATS test suite in `scripts/tests/build.bats` with 4 tests validating build script execution
+  - Comprehensive validation of production deployment workflow before cPanel deployment
+
 - **Frontend**: Implemented `App.tsx` root component with BrowserRouter routing for Home and NotFound pages.
 
 - **Frontend**: Implemented `main.tsx` Vite entry point using React 18 createRoot API with StrictMode wrapper.
