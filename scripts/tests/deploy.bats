@@ -17,7 +17,8 @@ teardown() {
 # ============================================================================
 
 @test "deployment skips production confirmation when not on interactive terminal" {
-  export DOMAIN="ashlynantrobus.dev"
+  export DOMAIN="test.com"
+  export PRODUCTION_DOMAIN="test.com"
   setup_mock_successful_database_creation
   setup_mock_successful_user_creation
   setup_mock_successful_ssh
@@ -32,6 +33,7 @@ teardown() {
 
 @test "deployment proceeds when production confirmation is not required" {
   export DOMAIN="staging.example.com"  # Non-production domain
+  export PRODUCTION_DOMAIN="example.com"
   setup_mock_successful_database_creation
   setup_mock_successful_user_creation
   setup_mock_successful_ssh
