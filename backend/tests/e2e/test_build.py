@@ -26,9 +26,7 @@ BASE_URL = "http://localhost:5000"
 
 @pytest.fixture(scope="module")
 def build():
-    if BUILD_DIR.exists():
-        yield
-        return
+    build_dir_preexists = BUILD_DIR.exists()
 
     script_path = (PROJECT_ROOT / "scripts" / "build.sh").absolute()
     script = str(script_path)
@@ -48,16 +46,19 @@ def build():
         pytest.exit(
             f"Failed to build frontend: \n{result.stdout}\n{result.stderr}"
         )
-    yield
 
-    shutil.rmtree(BUILD_DIR, ignore_errors=True)
+    try:
+        yield
+    finally:
+        if not build_dir_preexists:
+            shutil.rmtree(BUILD_DIR, ignore_errors=True)
 
 
 @pytest.fixture(scope="module")
 def flask_server(build):
     """Start Flask server for e2e testing."""
     monkeypatch = MonkeyPatch()
-    monkeypatch.setenv("FLASK_ENV", "DEVELOPMENT")
+    monkeypatch.setenv("FLASK_ENV", "PRODUCTION")
     app = create_app()
     thread = threading.Thread(
         target=app.run,
@@ -100,8 +101,13 @@ def test_health_db_endpoint_responds(flask_server):
     assert response.status_code in {200, 503}
 
 
+@pytest.mark.external
 def test_health_github_endpoint_responds(flask_server):
-    """Verify GET /health/github returns appropriate status."""
+    """Verify GET /health/github returns appropriate status.
+
+    Note: This test requires network access to GitHub. Marked as external
+    to allow skipping in offline or restricted environments.
+    """
     response = requests.get(f"{BASE_URL}/health/github", timeout=10)
 
     assert response.status_code in {200, 503}

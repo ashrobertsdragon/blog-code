@@ -1,8 +1,6 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 cd "$(dirname "$0")/../frontend"
-npm install
+npm ci
 npm run build
-
-exit 0

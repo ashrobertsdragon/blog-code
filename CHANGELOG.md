@@ -98,6 +98,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Code Review Fixes (PR #7)**: Implemented fixes from sourcery-ai and gemini-code-assist code reviews
+
+  - **Build Script**: Enhanced shell safety flags in `scripts/build.sh`
+    - Added `set -u` to error on unset variables
+    - Added `set -o pipefail` to catch errors in pipelines
+    - Removed unnecessary `exit 0` that could hide non-zero exit codes
+    - Changed `npm install` to `npm ci` for faster, more reliable builds from lockfile
+  - **E2E Tests**: Improved test reliability and production configuration
+    - Fixed build fixture to always run build for test determinism
+    - Added `try...finally` block to ensure cleanup even if tests fail
+    - Track initial BUILD_DIR state to preserve pre-existing builds
+    - Changed FLASK_ENV from DEVELOPMENT to PRODUCTION to accurately test production stack
+    - Marked GitHub health check test with `@pytest.mark.external` to allow skipping in offline/restricted environments
+  - **BATS Tests**: Optimized build script test performance
+    - Refactored to use `setup_file()`/`teardown_file()` hooks
+    - Build script now runs once per test file instead of once per test (4x faster)
+    - Individual tests now only verify build artifacts exist
+
 - **Deployment**: Critical bug fix in error handling for deployment script
 
   - Fixed `uapi_call()` function to correctly capture and propagate command exit codes
