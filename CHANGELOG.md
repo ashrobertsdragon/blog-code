@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Documentation**: Comprehensive developer onboarding documentation in `README.md`
+
+  - Project overview with Domain-Driven Design and Hexagonal Architecture explanation
+  - 15-minute quick start guide with copy-pasteable commands for immediate setup
+  - Development workflow documentation for backend (uv) and frontend (npm)
+  - Testing instructions for pytest, Vitest, Playwright, and pre-commit hooks
+  - CI/CD documentation for GitHub Actions workflows (backend and frontend)
+  - Deployment overview with health check verification steps
+  - Troubleshooting table with 15 common issues and solutions
+  - Contributing guidelines with conventional commits format and PR checklist
+  - Resource links for documentation, tooling, and external services (GitHub, Resend, Clerk)
+  - Architecture diagram showing bounded contexts and system components
+  - Development standards covering code quality, testing pyramid, and security requirements
+
+- **Backend**: Environment variable template in `backend/.env.example`
+
+  - Database configuration variables (LOCAL_POSTGRES_USER, LOCAL_POSTGRES_PASSWORD, LOCAL_POSTGRES_DB)
+  - Flask environment settings (FLASK_ENV)
+  - External API keys template (GITHUB_PERSONAL_ACCESS_TOKEN, RESEND_API_KEY)
+  - Clerk authentication credentials (CLERK_SECRET_KEY)
+  - cPanel deployment credentials template (CPANEL_POSTGRES_USER, CPANEL_POSTGRES_PASSWORD, CPANEL_POSTGRES_DB)
+  - Clear documentation comments explaining each variable's purpose
+  - Security reminder to never commit actual credentials
+
+- **Frontend**: Environment variable template in `frontend/.env.example`
+
+  - API base URL configuration (VITE_API_BASE_URL) for backend communication
+  - Clerk authentication public key (VITE_CLERK_PUBLISHABLE_KEY) for frontend integration
+  - Vite-specific environment variable naming convention (VITE\_ prefix)
+  - Documentation comments explaining variable usage and security practices
+
 - **Deployment**: Automated deployment script for cPanel hosting
 
   - End-to-end deployment automation to cPanel shared hosting environment
