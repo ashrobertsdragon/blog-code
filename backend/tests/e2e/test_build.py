@@ -30,18 +30,24 @@ def build():
         yield
         return
 
-    script_path = PROJECT_ROOT / "scripts" / "build.sh"
+    script_path = (PROJECT_ROOT / "scripts" / "build.sh").absolute()
+    script = str(script_path)
+    command = f'chmod +x "{script}" && "{script}"'
 
     if isinstance(PROJECT_ROOT, WindowsPath):
         letter = PROJECT_ROOT.drive[0].lower()
-        script = "/mnt/" + letter + script_path.as_posix()[2:]
-    else:
-        script = str(script_path)
+        cyg_path = "/" + letter + script_path.as_posix()[2:]
+        wsl_path = "/mnt" + cyg_path
+        command = (
+            f'"{cyg_path}" 2>/dev/null || "{wsl_path}" 2>/dev/null || exit 1'
+        )
 
-    cmd = ["bash", "-c", f"chmod +x {script} && {script}"]
+    cmd = ["bash", "-c", command]
     result = subprocess.run(cmd, text=True, capture_output=True)
     if result.returncode != 0:
-        pytest.exit(f"{script} failed:\n{result.stdout}\n{result.stderr}")
+        pytest.exit(
+            f"Failed to build frontend: \n{result.stdout}\n{result.stderr}"
+        )
     yield
 
     shutil.rmtree(BUILD_DIR, ignore_errors=True)
