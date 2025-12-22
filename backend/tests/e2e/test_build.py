@@ -10,7 +10,7 @@ Tests the complete production stack:
 import shutil
 import subprocess
 import threading
-from pathlib import Path
+from pathlib import Path, WindowsPath
 
 import pytest
 import requests
@@ -28,19 +28,23 @@ BASE_URL = "http://localhost:5000"
 def build():
     if BUILD_DIR.exists():
         yield
-    try:
-        cmd = [
-            "bash",
-            "-c",
-            "chmod",
-            "+x",
-            "&&",
-            str(PROJECT_ROOT / "scripts" / "build.sh"),
-        ]
-        subprocess.run(cmd, check=True)
-        yield
-    finally:
-        shutil.rmtree(BUILD_DIR, ignore_errors=True)
+        return
+
+    script_path = PROJECT_ROOT / "scripts" / "build.sh"
+
+    if isinstance(PROJECT_ROOT, WindowsPath):
+        letter = PROJECT_ROOT.drive[0].lower()
+        script = "/mnt/" + letter + script_path.as_posix()[2:]
+    else:
+        script = str(script_path)
+
+    cmd = ["bash", "-c", f"chmod +x {script} && {script}"]
+    result = subprocess.run(cmd, text=True, capture_output=True)
+    if result.returncode != 0:
+        pytest.exit(f"{script} failed:\n{result.stdout}\n{result.stderr}")
+    yield
+
+    shutil.rmtree(BUILD_DIR, ignore_errors=True)
 
 
 @pytest.fixture(scope="module")
@@ -67,7 +71,7 @@ def flask_server(build):
         monkeypatch.undo()
 
 
-def test_frontend_build_creates_static_assets():
+def test_frontend_build_creates_static_assets(flask_server):
     """Verify production build creates required static assets."""
     assert (BUILD_DIR / "index.html").exists()
     assert (BUILD_DIR / "static").exists()
