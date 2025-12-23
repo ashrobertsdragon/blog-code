@@ -63,6 +63,7 @@ The `deploy.sh` script requires the following environment variables to be set. Y
 | `RESEND_API_KEY` | Resend email service API key | `re_...` |
 | `CLERK_PUBLISHABLE_KEY` | Clerk auth publishable key | `pk_test_...` |
 | `CLERK_SECRET_KEY` | Clerk auth secret key | `sk_test_...` |
+| `PRODUCTION_DOMAIN` | Production domain for confirmation prompt | `example.com` |
 
 **Note**: The script will validate that all these variables are set before starting the deployment.
 
@@ -77,9 +78,6 @@ The entire deployment process is handled by a single script.
 The deployment script uploads the frontend, but does **not** build it. You must build the production-ready frontend artifacts first. You may use the build script for this.
 
 ```bash
-# Ensure you are in the monorepo directory
-cd monorepo
-
 # Run the build script
 ./scripts/build.sh
 ```
@@ -91,9 +89,6 @@ This will create a `monorepo/build` directory containing the static HTML, CSS, a
 From the `monorepo` directory, execute the `deploy.sh` script.
 
 ```bash
-# Ensure you are in the monorepo directory
-cd monorepo
-
 # Run the script
 ./scripts/deploy.sh
 ```

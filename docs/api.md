@@ -158,15 +158,10 @@ curl -X GET http://localhost:5000/health/db
 
 **HTTP Status Code:** `200 OK`
 
-**Response Body:**
-
-```json
 {
   "status": "healthy",
-  "database": "blog_db",
-  "host": "localhost"
+  "database": "connected"
 }
-```
 
 **Headers:**
 
@@ -178,8 +173,6 @@ Content-Length: 61
 
 ### Error Response (503 Service Unavailable)
 
-#### Database Connection Refused
-
 **HTTP Status Code:** `503 Service Unavailable`
 
 **Response Body:**
@@ -187,34 +180,9 @@ Content-Length: 61
 ```json
 {
   "status": "unhealthy",
-  "error": "Could not connect to database at localhost:5432 - connection refused"
+  "database": "unreachable"
 }
 ```
-
-#### Authentication Failure
-
-**HTTP Status Code:** `503 Service Unavailable`
-
-**Response Body:**
-
-```json
-{
-  "status": "unhealthy",
-  "error": "Database authentication failed - invalid credentials for user 'blog_user'"
-}
-```
-
-#### Database Timeout
-
-**HTTP Status Code:** `503 Service Unavailable`
-
-**Response Body:**
-
-```json
-{
-  "status": "unhealthy",
-  "error": "Database query timeout - connection pool exhausted"
-}
 ```
 
 **Headers:**
@@ -337,16 +305,10 @@ curl -X GET http://localhost:5000/health/github
 
 **HTTP Status Code:** `200 OK`
 
-**Response Body:**
-
 ```json
 {
   "status": "healthy",
-  "rate_limit": {
-    "limit": 5000,
-    "remaining": 4987,
-    "reset": 1703001600
-  }
+  "github": "reachable"
 }
 ```
 
@@ -363,8 +325,6 @@ X-RateLimit-Reset: 1703001600
 
 ### Error Response (503 Service Unavailable)
 
-#### GitHub API Unreachable
-
 **HTTP Status Code:** `503 Service Unavailable`
 
 **Response Body:**
@@ -372,47 +332,9 @@ X-RateLimit-Reset: 1703001600
 ```json
 {
   "status": "unhealthy",
-  "error": "Could not reach GitHub API - connection timeout after 10 seconds"
+  "github": "unreachable"
 }
 ```
-
-#### Rate Limit Exceeded
-
-**HTTP Status Code:** `503 Service Unavailable`
-
-**Response Body:**
-
-```json
-{
-  "status": "unhealthy",
-  "error": "GitHub API rate limit exceeded - 0 requests remaining, resets at 1703001600"
-}
-```
-
-#### Authentication Failure
-
-**HTTP Status Code:** `503 Service Unavailable`
-
-**Response Body:**
-
-```json
-{
-  "status": "unhealthy",
-  "error": "GitHub API authentication failed - invalid or expired token"
-}
-```
-
-#### GitHub API Error
-
-**HTTP Status Code:** `503 Service Unavailable`
-
-**Response Body:**
-
-```json
-{
-  "status": "unhealthy",
-  "error": "GitHub API returned error: 500 Internal Server Error"
-}
 ```
 
 **Headers:**

@@ -145,8 +145,11 @@ monorepo/
 #### Backend (.env)
 
 ```bash
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/blog_dev
+# Database (for development)
+LOCAL_DB_HOST=localhost
+LOCAL_DB_NAME=blog_dev
+LOCAL_DB_USER=your_user
+LOCAL_DB_PASSWORD=your_password
 
 # GitHub API (for draft sync)
 GITHUB_TOKEN=your_github_personal_access_token
@@ -278,7 +281,7 @@ The `scripts/deploy.sh` script handles all aspects of the deployment, including:
 - Verifying the deployment with health checks.
 
 **For full instructions, refer to the official deployment guide:**
-➡️ **[cPanel Deployment Guide](docs/deployment.md)**
+➡️ **[cPanel Deployment Guide](docs/DEPLOYMENT.md)**
 
 ---
 
@@ -288,7 +291,7 @@ The `scripts/deploy.sh` script handles all aspects of the deployment, including:
 | :--- | :--- | :--- |
 | `ModuleNotFoundError` | Not using `uv run` | Always prefix Python commands with `uv run` (e.g., `uv run pytest`). |
 | PostgreSQL connection refused | Database not running | Start your local PostgreSQL service. |
-| API calls fail with 404 | Backend not running | Start the Flask server: `cd backend && uv run flask run`. |
+| API calls fail with 404 | Backend not running | Start the Flask server: `cd backend && uv run dev_flask`. |
 | `CORS error` in browser | CORS misconfiguration | Ensure `CORS(app)` is configured in `backend/src/backend/main.py`. |
 
 ## CI/CD
@@ -386,7 +389,7 @@ git commit -m "feat: add post revision comparison API"
 7.**Push and create PR**
 
 ```bash
-gitpush origin feature/your-feature-name
+git push origin feature/your-feature-name
 #Create PR on GitHub
 ```
 
