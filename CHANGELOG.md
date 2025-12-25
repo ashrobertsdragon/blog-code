@@ -53,7 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cross-platform SSH key handling (Windows Git Bash and Linux compatibility)
   - Security features: input sanitization, secret suppression, audit logging
   - Production deployment confirmation prompt for safety
-  - BATS test suite with 37 tests covering validation, provisioning, error handling, and idempotency
+  - BATS test suite with 40 tests covering validation, provisioning, error handling, and idempotency
+  - Comprehensive production domain confirmation test coverage (interactive/non-interactive scenarios, staging/dev domain handling)
   - Detailed deployment documentation with prerequisites and usage examples
 
 - **Backend**: Implemented Passenger WSGI entry point in `src/passenger_wsgi.py`
