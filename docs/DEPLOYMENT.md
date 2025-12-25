@@ -52,7 +52,8 @@ The `deploy.sh` script requires the following environment variables to be set. Y
 
 | Variable | Description | Example Value |
 | :--- | :--- | :--- |
-| `DOMAIN` | Target domain name | `ashlynantrobus.dev` |
+| `DOMAIN` | Target domain name | `example.com` |
+| `PRODUCTION_DOMAIN` | Production domain for confirmation prompt | `example.com` |
 | `CPANEL_USERNAME` | cPanel/SSH username | `myuser` |
 | `SERVER_IP_ADDRESS` | Server IP address for SSH | `198.51.100.50` |
 | `SSH_PRIVATE_KEY_PATH` | Path to your SSH private key | `~/.ssh/id_rsa` |

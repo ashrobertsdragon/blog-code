@@ -183,7 +183,6 @@ Content-Length: 61
   "database": "unreachable"
 }
 ```
-```
 
 **Headers:**
 
@@ -334,7 +333,6 @@ X-RateLimit-Reset: 1703001600
   "status": "unhealthy",
   "github": "unreachable"
 }
-```
 ```
 
 **Headers:**
