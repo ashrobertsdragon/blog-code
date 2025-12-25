@@ -148,6 +148,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Build script now runs once per test file instead of once per test (4x faster)
     - Individual tests now only verify build artifacts exist
 
+- **Code Review Fixes (PR #8)**: Addressed documentation and configuration issues from gemini-code-assist code review
+
+  - **Backend Configuration**: Corrected `.env.example` to use `LOCAL_*` prefix variables matching `config.py` expectations
+    - Fixed database configuration to use `LOCAL_DB_HOST`, `LOCAL_DB_NAME`, `LOCAL_DB_USER`, `LOCAL_DB_PASSWORD`
+    - Ensures development environment variables align with `DevDBSettings` class requirements
+  - **API Documentation**: Updated health endpoint documentation in `docs/api.md` to match actual implementation
+    - Fixed `/health/db` endpoint response format (simple status object instead of detailed host/database info)
+    - Fixed `/health/github` endpoint response format (simple status object instead of detailed rate_limit info)
+  - **README Organization**: Improved build script documentation clarity
+    - Reorganized `./scripts/build.sh` command placement for better categorization
+    - Clarified frontend-specific vs. project-wide command usage
+  - **Deployment Documentation**: Added missing `PRODUCTION_DOMAIN` environment variable to deployment docs table
+    - Documented required variable for production confirmation prompt functionality
+    - Completed environment variables reference in `docs/DEPLOYMENT.md`
+
 - **Deployment**: Critical bug fix in error handling for deployment script
 
   - Fixed `uapi_call()` function to correctly capture and propagate command exit codes
