@@ -13,7 +13,7 @@ teardown() {
 }
 
 # ============================================================================
-# Environment Validation Tests (6 tests)
+# Environment Validation Tests (9 tests)
 # ============================================================================
 
 @test "deployment skips production confirmation when not on interactive terminal" {
@@ -29,10 +29,11 @@ teardown() {
   run main
 
   assert_exit_success "$status"
+  assert_not_contains "$output" "WARNING: Deploying to PRODUCTION domain"
 }
 
 @test "deployment proceeds when production confirmation is not required" {
-  export DOMAIN="staging.example.com"  # Non-production domain
+  export DOMAIN="staging.example.com"
   export PRODUCTION_DOMAIN="example.com"
   setup_mock_successful_database_creation
   setup_mock_successful_user_creation
@@ -44,6 +45,39 @@ teardown() {
   run main
 
   assert_exit_success "$status"
+  assert_not_contains "$output" "WARNING: Deploying to PRODUCTION domain"
+}
+
+@test "deployment proceeds when DOMAIN is non-production with PRODUCTION_DOMAIN set" {
+  export DOMAIN="dev.example.com"
+  export PRODUCTION_DOMAIN="example.com"
+  setup_mock_successful_database_creation
+  setup_mock_successful_user_creation
+  setup_mock_successful_ssh
+  setup_mock_successful_rsync
+  setup_mock_successful_health_check
+
+  source "${BATS_TEST_DIRNAME}/../deploy.sh"
+  run main
+
+  assert_exit_success "$status"
+  assert_not_contains "$output" "WARNING: Deploying to PRODUCTION domain"
+}
+
+@test "deployment does not prompt when DOMAIN is clearly non-production even if PRODUCTION_DOMAIN is set" {
+  export DOMAIN="test.localhost"
+  export PRODUCTION_DOMAIN="example.com"
+  setup_mock_successful_database_creation
+  setup_mock_successful_user_creation
+  setup_mock_successful_ssh
+  setup_mock_successful_rsync
+  setup_mock_successful_health_check
+
+  source "${BATS_TEST_DIRNAME}/../deploy.sh"
+  run main
+
+  assert_exit_success "$status"
+  assert_not_contains "$output" "WARNING: Deploying to PRODUCTION domain"
 }
 
 @test "deployment fails when CPANEL_USERNAME is not set" {
