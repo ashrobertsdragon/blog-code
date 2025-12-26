@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Documentation**: Comprehensive developer onboarding documentation in `README.md`
+
+  - Project overview with Domain-Driven Design and Hexagonal Architecture explanation
+  - 15-minute quick start guide with copy-pasteable commands for immediate setup
+  - Development workflow documentation for backend (uv) and frontend (npm)
+  - Testing instructions for pytest, Vitest, Playwright, and pre-commit hooks
+  - CI/CD documentation for GitHub Actions workflows (backend and frontend)
+  - Deployment overview with health check verification steps
+  - Troubleshooting table with 15 common issues and solutions
+  - Contributing guidelines with conventional commits format and PR checklist
+  - Resource links for documentation, tooling, and external services (GitHub, Resend, Clerk)
+  - Architecture diagram showing bounded contexts and system components
+  - Development standards covering code quality, testing pyramid, and security requirements
+
+- **Backend**: Environment variable template in `backend/.env.example`
+
+  - Database configuration variables (LOCAL_POSTGRES_USER, LOCAL_POSTGRES_PASSWORD, LOCAL_POSTGRES_DB)
+  - Flask environment settings (FLASK_ENV)
+  - External API keys template (GITHUB_PERSONAL_ACCESS_TOKEN, RESEND_API_KEY)
+  - Clerk authentication credentials (CLERK_SECRET_KEY)
+  - cPanel deployment credentials template (CPANEL_POSTGRES_USER, CPANEL_POSTGRES_PASSWORD, CPANEL_POSTGRES_DB)
+  - Clear documentation comments explaining each variable's purpose
+  - Security reminder to never commit actual credentials
+
+- **Frontend**: Environment variable template in `frontend/.env.example`
+
+  - API base URL configuration (VITE_API_BASE_URL) for backend communication
+  - Clerk authentication public key (VITE_CLERK_PUBLISHABLE_KEY) for frontend integration
+  - Vite-specific environment variable naming convention (VITE\_ prefix)
+  - Documentation comments explaining variable usage and security practices
+
 - **Deployment**: Automated deployment script for cPanel hosting
 
   - End-to-end deployment automation to cPanel shared hosting environment
@@ -22,7 +53,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cross-platform SSH key handling (Windows Git Bash and Linux compatibility)
   - Security features: input sanitization, secret suppression, audit logging
   - Production deployment confirmation prompt for safety
-  - BATS test suite with 37 tests covering validation, provisioning, error handling, and idempotency
+  - BATS test suite with 40 tests covering validation, provisioning, error handling, and idempotency
+  - Comprehensive production domain confirmation test coverage (interactive/non-interactive scenarios, staging/dev domain handling)
   - Detailed deployment documentation with prerequisites and usage examples
 
 - **Backend**: Implemented Passenger WSGI entry point in `src/passenger_wsgi.py`
@@ -115,6 +147,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Refactored to use `setup_file()`/`teardown_file()` hooks
     - Build script now runs once per test file instead of once per test (4x faster)
     - Individual tests now only verify build artifacts exist
+
+- **Code Review Fixes (PR #8)**: Addressed documentation and configuration issues from gemini-code-assist code review
+
+  - **Backend Configuration**: Corrected `.env.example` to use `LOCAL_*` prefix variables matching `config.py` expectations
+    - Fixed database configuration to use `LOCAL_DB_HOST`, `LOCAL_DB_NAME`, `LOCAL_DB_USER`, `LOCAL_DB_PASSWORD`
+    - Ensures development environment variables align with `DevDBSettings` class requirements
+  - **API Documentation**: Updated health endpoint documentation in `docs/api.md` to match actual implementation
+    - Fixed `/health/db` endpoint response format (simple status object instead of detailed host/database info)
+    - Fixed `/health/github` endpoint response format (simple status object instead of detailed rate_limit info)
+  - **README Organization**: Improved build script documentation clarity
+    - Reorganized `./scripts/build.sh` command placement for better categorization
+    - Clarified frontend-specific vs. project-wide command usage
+  - **Deployment Documentation**: Added missing `PRODUCTION_DOMAIN` environment variable to deployment docs table
+    - Documented required variable for production confirmation prompt functionality
+    - Completed environment variables reference in `docs/DEPLOYMENT.md`
 
 - **Deployment**: Critical bug fix in error handling for deployment script
 
