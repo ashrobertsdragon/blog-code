@@ -291,8 +291,8 @@ upload_code() {
     -o StrictHostKeyChecking=accept-new" "$backend_src" \
     "${CPANEL_USERNAME}@${SERVER_IP_ADDRESS}:${remote_path}/" || return 1
 
-  if [[ -d "${PROJECT_ROOT}/monorepo/frontend/build" ]]; then
-    local frontend_src="${PROJECT_ROOT}/monorepo/frontend/build/"
+  if [[ -d "${PROJECT_ROOT}/monorepo/build" ]]; then
+    local frontend_src="${PROJECT_ROOT}/monorepo/build/"
     if [[ -z "$(ls -A "$frontend_src" 2>/dev/null || true)" ]]; then
       printf "WARNING: Frontend build directory is empty\n" >&2
     else
@@ -352,11 +352,17 @@ REMOTE_SCRIPT
 
 run_schema() {
   logger -t deploy.sh -p user.info "Creating database schema on ${SERVER_IP_ADDRESS}"
-  run_remote_command "${SERVER_IP_ADDRESS}" bash <<'REMOTE_SCRIPT' || return 1
+  run_remote_command "${SERVER_IP_ADDRESS}" bash <<REMOTE_SCRIPT || return 1
 set -Eeuo pipefail
 
-export PATH="$HOME/.cargo/bin:$PATH"
+export PATH="\$HOME/.cargo/bin:\$PATH"
 cd ~/blog
+
+export DB_HOST="localhost"
+export DB_NAME="$(get_database_name)"
+export DB_USER="${CPANEL_POSTGRES_USER}"
+export DB_PASSWORD="${CPANEL_POSTGRES_PASSWORD}"
+export FLASK_ENV="PRODUCTION"
 
 echo "Creating database schema..."
 uv run create-schema
